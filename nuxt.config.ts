@@ -89,6 +89,7 @@ export default defineNuxtConfig({
       globalHead: JSON.parse(
         readFileSync(resolve("site.json"), "utf-8")
       ) as any, // Приведение к any
+      mediaStorageUrl: process.env.MEDIA_STORAGE_URL,
     },
     server: {
       siteId: process.env.SITE_ID,
@@ -96,6 +97,7 @@ export default defineNuxtConfig({
       globalHead: JSON.parse(
         readFileSync(resolve("site.json"), "utf-8")
       ) as any, // Приведение к any
+      mediaStorageUrl: process.env.MEDIA_STORAGE_URL,
     },
   },
   plugins: ["~/plugins/vue-query.ts"],

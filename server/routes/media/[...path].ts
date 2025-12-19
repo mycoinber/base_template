@@ -1,37 +1,66 @@
-import { defineEventHandler, getRouterParam, setHeader, setResponseStatus } from 'h3'
+import { defineEventHandler, getRouterParam, setHeader, setResponseStatus, createError } from 'h3'
+
+const sanitizePath = (raw: string) => {
+  return raw
+    .split('/')
+    .map((segment) => decodeURIComponent(segment).replace(/[^\w.\-]/g, ''))
+    .filter(Boolean)
+    .join('/');
+};
 
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig()
-  const backHost: string = import.meta.server ? (config.server as any).backHost : (config.public as any).backHost
+  const config = useRuntimeConfig(event);
+  const baseUrl: string | undefined = (config.server as any).mediaStorageUrl
+    || (config.public as any).mediaStorageUrl;
 
-  const param = getRouterParam(event, 'path') || ''
-  const cleanParam = param.startsWith('/') ? param : `/${param}`
-  const target = `${backHost}${cleanParam}`
+  if (!baseUrl) {
+    throw createError({ statusCode: 500, statusMessage: 'MEDIA_STORAGE_URL is not configured' });
+  }
+
+  const param = getRouterParam(event, 'path') || '';
+  const cleanParam = sanitizePath(param);
+  if (!cleanParam) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid media path' });
+  }
+
+  const target = `${baseUrl.replace(/\/$/, '')}/${cleanParam}`;
+  const cacheKey = cleanParam.toLowerCase();
+  const storage = useStorage('cache:media');
+
+  const cachedMeta = await storage.getItem<{ contentType: string }>(`${cacheKey}:meta`).catch(() => null);
+  const cachedBody = await storage.getItemRaw(`${cacheKey}:data`).catch(() => null);
+
+  if (cachedMeta && cachedBody) {
+    setHeader(event, 'content-type', cachedMeta.contentType || 'application/octet-stream');
+    setHeader(event, 'cache-control', 'public, max-age=86400, s-maxage=31536000, immutable');
+    return cachedBody;
+  }
 
   try {
     const res = await fetch(target, {
-      // Forward minimal headers useful for caching and format negotiation
       headers: {
         'Accept': event.node.req.headers['accept'] || '*/*',
-        'User-Agent': event.node.req.headers['user-agent'] || 'nuxt-proxy',
+        'User-Agent': event.node.req.headers['user-agent'] || 'nuxt-media-proxy',
       },
-    })
+    });
 
-    // Mirror status code
-    setResponseStatus(event, res.status)
+    if (!res.ok) {
+      setResponseStatus(event, res.status);
+      return res.statusText;
+    }
 
-    // Pass through basic headers
-    const contentType = res.headers.get('content-type')
-    if (contentType) setHeader(event, 'content-type', contentType)
-    const cacheControl = res.headers.get('cache-control')
-    if (cacheControl) setHeader(event, 'cache-control', cacheControl)
+    const contentType = res.headers.get('content-type') || 'application/octet-stream';
+    const buffer = new Uint8Array(await res.arrayBuffer());
 
-    // Return raw body
-    const arrayBuf = await res.arrayBuffer()
-    return new Uint8Array(arrayBuf)
+    await storage.setItemRaw(`${cacheKey}:data`, buffer);
+    await storage.setItem(`${cacheKey}:meta`, { contentType });
+
+    setHeader(event, 'content-type', contentType);
+    setHeader(event, 'cache-control', 'public, max-age=86400, s-maxage=31536000, immutable');
+
+    return buffer;
   } catch (err) {
-    setResponseStatus(event, 502)
-    return 'Bad Gateway'
+    console.error('[Media Proxy] Failed to fetch', target, err);
+    throw createError({ statusCode: 502, statusMessage: 'Failed to fetch media' });
   }
-})
-
+});

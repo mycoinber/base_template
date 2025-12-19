@@ -1,42 +1,137 @@
 // composables/usePageData.ts
 import { useNuxtApp, useAsyncData } from "#app";
-import { watch } from 'vue'
+import { watch } from "vue";
+
+type AnyObject = Record<string, any>;
+
+const ensureArray = (value: any): any[] => {
+  if (Array.isArray(value)) return value;
+  return value != null ? [value] : [];
+};
+
+const normalizeMediaArray = (value: any): AnyObject[] => {
+  return ensureArray(value)
+    .map((entry) => (entry && typeof entry === "object" ? entry : null))
+    .filter((entry): entry is AnyObject => Boolean(entry && entry.path));
+};
+
+const normalizeFaqs = (faqs: any, blockId: string) => {
+  if (!Array.isArray(faqs) || faqs.length === 0) return null;
+  const mapped = faqs
+    .map((faq, index) => ({
+      _id: faq?._id || `${blockId}-faq-${index}`,
+      question: faq?.question || "",
+      answer: faq?.answer || "",
+    }))
+    .filter((faq) => faq.question && faq.answer);
+  return mapped.length ? mapped : null;
+};
+
+const stripHtml = (value: unknown) =>
+  typeof value === "string" ? value.replace(/<[^>]*>/g, "").trim() : "";
+
+const normalizeReviews = (reviews: any, blockId: string) => {
+  if (!Array.isArray(reviews) || reviews.length === 0) return null;
+  const mapped = reviews
+    .map((review, index) => {
+      const avatarPictures = normalizeMediaArray(
+        review?.author?.picture || review?.authorAvatar || review?.authorAvatarMedia,
+      );
+      const comment = review?.comment || review?.content || "";
+      return {
+        ...review,
+        _id: review?._id || `${blockId}-review-${index}`,
+        name: review?.name || review?.authorBio || review?.author || `Reviewer ${index + 1}`,
+        comment,
+        rating: review?.rating ?? null,
+        date: review?.date || review?.updatedAt || review?.createdAt || new Date().toISOString(),
+        author: {
+          ...(review?.author || {}),
+          picture: avatarPictures,
+        },
+      };
+    })
+    .filter((review) => Boolean(stripHtml(review.comment)));
+  return mapped.length ? mapped : null;
+};
+
+const normalizeBlocks = (blocks: any[] | undefined) => {
+  if (!Array.isArray(blocks)) return [];
+  return blocks.map((block, index) => {
+    const blockId = block?._id || block?.id || `block-${index}`;
+    const imageCandidates =
+      block?.imageUrl || block?.imageMedia || block?.image || block?.hero || [];
+    return {
+      ...block,
+      _id: blockId,
+      H2: block?.H2 || block?.headline || block?.title || "",
+      imageUrl: normalizeMediaArray(imageCandidates),
+      faqs: normalizeFaqs(block?.faqs, blockId),
+      reviews: normalizeReviews(block?.reviews, blockId),
+    };
+  });
+};
+
+const normalizePageResponse = (payload: AnyObject, slug: string | null) => {
+  if (!payload || typeof payload !== "object") return {} as AnyObject;
+
+  const article = payload.article || {};
+  const normalizedBlocks = normalizeBlocks(article.blocks);
+  const introBlock = normalizedBlocks.find(
+    (block) => typeof block?.type === "string" && block.type.toLowerCase() === "intro",
+  );
+  const heroImages = Array.isArray(payload.hero) && payload.hero.length
+    ? payload.hero
+    : introBlock?.imageUrl && introBlock.imageUrl.length
+      ? introBlock.imageUrl
+      : [];
+
+  return {
+    ...payload,
+    type: payload.type || "page",
+    slug: payload.slug || slug || "",
+    article: {
+      ...article,
+      H1: article.H1 || article.h1 || payload.head?.title || "",
+      intro: article.intro || introBlock?.content || "",
+      introImage: heroImages,
+      blocks: normalizedBlocks,
+    },
+    hero: heroImages,
+  };
+};
 
 export function usePageData(siteId: string, slug: string | null) {
-    const { $axios } = useNuxtApp() as any;
+  const { $axios } = useNuxtApp() as any;
 
-    // Вынесли саму функцию запроса
-    const fetchPage = async () => {
-        const params: Record<string, any> = { siteId };
-        if (slug) params.slug = slug;
-        try {
-            const response = await $axios.get("/pages/page-by-slug", { params });
-            return response.data;
-        } catch (error: any) {
-            // Treat 404 as an expected "not found" state and avoid logging noisy objects
-            const status = error?.response?.status;
-            if (status && status !== 404) {
-                const message = error?.response?.data?.message || error?.message || String(error);
-                console.warn("Ошибка запроса:", message);
-            }
-            return {};
-        }
-    };
+  const fetchPage = async () => {
+    const params: Record<string, any> = {};
+    if (slug) params.slug = slug;
+    try {
+      const response = await $axios.get(`/pages/${siteId}`, { params: Object.keys(params).length ? params : undefined });
+      return normalizePageResponse(response.data || {}, slug);
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status && status !== 404) {
+        const message = error?.response?.data?.message || error?.message || String(error);
+        console.warn("Ошибка запроса:", message);
+      }
+      return {};
+    }
+  };
 
-    // Вынесли асинхронное получение данных
-    const asyncData = useAsyncData(
-        `page-${slug || "home"}-${siteId}`,
-        fetchPage,
-        { server: true }
-    );
+  const asyncData = useAsyncData(
+    `page-${slug || "home"}-${siteId}`,
+    fetchPage,
+    { server: true },
+  );
 
-    // Keep a global offerId for layout/header and buttons
-    const currentOfferId = useState<string | null>('currentOfferId', () => null)
-    watch(
-        () => asyncData.data.value?.offer?._id as string | undefined,
-        (id) => { currentOfferId.value = id || null },
-        { immediate: true }
-    )
+  const currentOfferId = useState<string | null>("currentOfferId", () => null);
+  watch(
+    () => asyncData.data.value?.offer?._id as string | undefined,
+    (id) => { currentOfferId.value = id || null; },
+    { immediate: true },
+  );
 
-    return asyncData;
+  return asyncData;
 }

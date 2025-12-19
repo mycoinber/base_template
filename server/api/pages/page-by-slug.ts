@@ -30,11 +30,10 @@ export default defineEventHandler(async (event) => {
   const backendBase = config.server.backHost;
 
   try {
-    const params: Record<string, any> = { siteId };
-    if (slug) params.slug = slug;
-    const response: PageResponse = await $fetch(`${backendBase}/pages/page-by-slug`, {
+    const baseUrl = backendBase?.replace(/\/$/, '') || '';
+    const response: PageResponse = await $fetch(`${baseUrl}/pages/${siteId}`, {
       method: "GET",
-      params,
+      params: slug ? { slug } : undefined,
     });
 
     return response;
