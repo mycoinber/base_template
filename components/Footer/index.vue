@@ -38,7 +38,14 @@ const siteDomain = `${url.protocol}//${url.host}`;
 
 const resolvedLogo = computed(() => {
   const fromState = Array.isArray(sharedLogo.value) ? sharedLogo.value : [];
-  return fromState.length ? fromState[0] : null;
+  if (fromState.length) {
+    return fromState[0];
+  }
+  const fallback = props.data?.logo;
+  if (Array.isArray(fallback) && fallback.length) {
+    return fallback[0];
+  }
+  return null;
 });
 </script>
 

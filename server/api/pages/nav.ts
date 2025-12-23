@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   try {
     const page = await $fetch(`${backendBase}/pages/${siteId}`);
     const head = page?.head || {};
-    const logo = head?.ogImage ? [head.ogImage] : [];
+    const logo = Array.isArray(page?.logo) ? page.logo : [];
     const pages = [
       {
         slug: page?.slug || '',

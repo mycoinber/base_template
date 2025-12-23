@@ -1,5 +1,5 @@
 <script setup>
-import { useCssModule } from "vue";
+import { useCssModule, watch } from "vue";
 import { useNuxtApp } from "#app";
 import { useAsyncData } from "#app";
 
@@ -23,6 +23,15 @@ const fetchPages = async (siteId) => {
 const { data, error } = useAsyncData("pages", () => fetchPages(siteId), {
   ssr: true,
 });
+
+const sharedLogo = useState("siteLogo", () => []);
+watch(
+  () => data.value?.logo,
+  (logo) => {
+    sharedLogo.value = Array.isArray(logo) ? logo : [];
+  },
+  { immediate: true },
+);
 
 const hasError = error.value;
 </script>

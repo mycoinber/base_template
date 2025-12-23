@@ -106,6 +106,10 @@ export function usePageData(siteId: string, slug: string | null) {
 
   const siteLogo = useState<any[]>("siteLogo", () => []);
 
+  const updateLogoState = (logo: any) => {
+    siteLogo.value = Array.isArray(logo) ? logo : [];
+  };
+
   const fetchPage = async () => {
     const params: Record<string, any> = {};
     if (slug) params.slug = slug;
@@ -116,7 +120,9 @@ export function usePageData(siteId: string, slug: string | null) {
         console.info('[usePageData] Fetched page payload:', payload);
       }
       const normalized = normalizePageResponse(payload, slug);
-      siteLogo.value = Array.isArray(normalized.logo) ? normalized.logo : [];
+      if (import.meta.client) {
+        updateLogoState(normalized.logo);
+      }
       return normalized;
     } catch (error: any) {
       const status = error?.response?.status;
@@ -140,5 +146,12 @@ export function usePageData(siteId: string, slug: string | null) {
     (id) => { currentOfferId.value = id || null; },
     { immediate: true },
   );
+  if (import.meta.client) {
+    watch(
+      () => asyncData.data.value?.logo,
+      (logo) => updateLogoState(logo),
+      { immediate: true },
+    );
+  }
   return asyncData;
 }
