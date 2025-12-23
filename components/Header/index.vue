@@ -16,7 +16,7 @@ const sharedLogo = useState("siteLogo", () => []);
 const navigationLinks = computed(() => {
   return props.data?.pages
     .map((page) => {
-      let title = page.head.title;
+      let title = page.title || '';
       if (title.match(/[-–:|]/)) {
         title = title.split(/[-–:|]/)[0].trim();
       }

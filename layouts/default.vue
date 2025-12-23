@@ -13,6 +13,9 @@ const styles = useCssModule();
 const fetchPages = async (siteId) => {
   try {
     const response = await $axios.get(`/pages/nav?siteId=${siteId}`);
+    if (process.dev) {
+      console.info('[layout] fetched nav data:', response.data);
+    }
     return response.data;
   } catch (error) {
     console.error("Ошибка при запросе данных:", error);

@@ -12,6 +12,35 @@ const blocks = computed(() =>
   Array.isArray(props.data.article?.blocks) ? props.data.article.blocks : [],
 );
 
+const introBlock = computed(() =>
+  blocks.value.find(
+    (block) => typeof block?.type === 'string' && block.type.toLowerCase() === 'intro',
+  ) || null,
+);
+
+const heroMedia = computed(() => {
+  const intro = introBlock.value || null;
+  if (intro) {
+    if (Array.isArray(intro.imageUrl) && intro.imageUrl.length && intro.imageUrl[0]?.path) {
+      return intro.imageUrl[0];
+    }
+    if (intro.image && intro.image.path) {
+      return intro.image;
+    }
+  }
+  const heroArray = Array.isArray(props.data?.hero) ? props.data.hero : [];
+  if (heroArray.length && heroArray[0]?.path) {
+    return heroArray[0];
+  }
+  return null;
+});
+
+const heroAlt = computed(() => {
+  if (heroMedia.value?.alt) return heroMedia.value.alt;
+  if (introBlock.value?.headline) return introBlock.value.headline;
+  return props.data?.article?.H1 || 'hero';
+});
+
 const sectionComponents = {
   intro: defineAsyncComponent(() => import('./sections/Intro.vue')),
   h2: defineAsyncComponent(() => import('./sections/Heading.vue')),
@@ -46,6 +75,18 @@ if (import.meta.server) {
   <div v-if="!isLoaded" class="fixed top-0 left-0 w-full h-screen flex items-center justify-center bg-background-01 z-[9999]">
     <MainLoader />
   </div>
+
+  <section
+    v-if="heroMedia"
+    class="relative w-full mb-8 overflow-hidden rounded-[0.625rem] border border-border"
+  >
+    <img
+      :src="`/media${heroMedia?.path || ''}`"
+      :alt="heroAlt"
+      class="w-full h-full object-cover"
+      loading="lazy"
+    />
+  </section>
 
   <MainTitle v-if="data.article?.H1" :data="data" />
 

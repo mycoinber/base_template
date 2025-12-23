@@ -8,22 +8,15 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event);
   const backendBase = (config.server as any).backHost?.replace(/\/$/, '') || '';
   try {
-    const page = await $fetch(`${backendBase}/pages/${siteId}`);
-    const head = page?.head || {};
-    const logo = Array.isArray(page?.logo) ? page.logo : [];
-    const pages = [
-      {
-        slug: page?.slug || '',
-        homePage: Boolean(page?.homePage),
-        head,
-      },
-    ];
+    const result = await $fetch(`${backendBase}/pages/nav`, {
+      params: { siteId },
+    });
 
-    return {
-      pages,
-      logo,
-      offer: page?.offer || null,
-    };
+    if (process.dev) {
+      console.info('[proxy] /pages/nav result:', result);
+    }
+
+    return result;
   } catch (error: any) {
     console.error('[Proxy Error] /pages/nav:', error?.data || error?.message);
     throw createError({ statusCode: error?.statusCode || 500, statusMessage: 'Failed to fetch nav' });
