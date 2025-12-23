@@ -11,6 +11,8 @@ const props = defineProps({
   },
 });
 
+const sharedLogo = useState("siteLogo", () => []);
+
 const navigationLinks = computed(() => {
   return props.data?.pages
     .map((page) => {
@@ -39,6 +41,11 @@ const toggleMenu = () => {
 
 // Buttons now resolve offer link themselves via useOffer
 
+const resolvedLogo = computed(() => {
+  const fromState = Array.isArray(sharedLogo.value) ? sharedLogo.value : [];
+  return fromState.length ? fromState[0] : null;
+});
+
 </script>
 
 <template>
@@ -47,7 +54,7 @@ const toggleMenu = () => {
       <div class="flex items-center justify-between gap-4 py-4">
         <div class="min-w-12 h-12 min-h-12 rounded overflow-hidden max-[541px]:min-w-8 max-[541px]:h-8 max-[541px]:min-h-8">
           <NuxtLink to="/" class="w-full h-full block">
-            <img v-if="data.logo?.length" :src="`/media${data.logo[0]?.path || ''}`" :alt="data.logo[0]?.alt || 'logo'" class="w-full h-full object-contain" />
+            <img v-if="resolvedLogo" :src="`/media${resolvedLogo?.path || ''}`" :alt="resolvedLogo?.alt || 'logo'" class="w-full h-full object-contain" />
           </NuxtLink>
         </div>
 
@@ -93,4 +100,3 @@ const toggleMenu = () => {
     </div>
   </header>
 </template>
-

@@ -11,6 +11,8 @@ const props = defineProps({
   },
 });
 
+const sharedLogo = useState("siteLogo", () => []);
+
 const navigationLinks = computed(() => {
   return props.data?.pages
     .map((page) => {
@@ -33,6 +35,11 @@ const navigationLinks = computed(() => {
 
 const url = useRequestURL();
 const siteDomain = `${url.protocol}//${url.host}`;
+
+const resolvedLogo = computed(() => {
+  const fromState = Array.isArray(sharedLogo.value) ? sharedLogo.value : [];
+  return fromState.length ? fromState[0] : null;
+});
 </script>
 
 <template>
@@ -42,7 +49,7 @@ const siteDomain = `${url.protocol}//${url.host}`;
         <div class="flex items-center gap-20 max-[541px]:flex-col max-[541px]:items-start max-[541px]:gap-4">
           <div class="min-w-12 h-12 min-h-12 rounded overflow-hidden max-[541px]:min-w-8 max-[541px]:h-8 max-[541px]:min-h-8 max-[541px]:mb-4">
             <NuxtLink to="/" class="w-full h-full block">
-              <img v-if="data.logo?.length" :src="`/media${data.logo[0]?.path || ''}`" :alt="data.logo[0]?.alt || 'logo'" class="w-full h-full object-contain" />
+              <img v-if="resolvedLogo" :src="`/media${resolvedLogo?.path || ''}`" :alt="resolvedLogo?.alt || 'logo'" class="w-full h-full object-contain" />
             </NuxtLink>
           </div>
 
@@ -62,4 +69,3 @@ const siteDomain = `${url.protocol}//${url.host}`;
     </div>
   </footer>
 </template>
-

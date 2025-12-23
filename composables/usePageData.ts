@@ -104,6 +104,8 @@ const normalizePageResponse = (payload: AnyObject, slug: string | null) => {
 export function usePageData(siteId: string, slug: string | null) {
   const { $axios } = useNuxtApp() as any;
 
+  const siteLogo = useState<any[]>("siteLogo", () => []);
+
   const fetchPage = async () => {
     const params: Record<string, any> = {};
     if (slug) params.slug = slug;
@@ -113,7 +115,9 @@ export function usePageData(siteId: string, slug: string | null) {
       if (process.dev) {
         console.info('[usePageData] Fetched page payload:', payload);
       }
-      return normalizePageResponse(payload, slug);
+      const normalized = normalizePageResponse(payload, slug);
+      siteLogo.value = Array.isArray(normalized.logo) ? normalized.logo : [];
+      return normalized;
     } catch (error: any) {
       const status = error?.response?.status;
       if (status && status !== 404) {
@@ -136,6 +140,5 @@ export function usePageData(siteId: string, slug: string | null) {
     (id) => { currentOfferId.value = id || null; },
     { immediate: true },
   );
-
   return asyncData;
 }
