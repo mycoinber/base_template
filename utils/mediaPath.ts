@@ -1,10 +1,20 @@
+const ensureLeadingSlash = (value: string) => (value.startsWith('/') ? value : `/${value}`);
+
+const proxyPrefixes = ['/siteid/', '/uploads/', '/storage/', '/resized/'];
+
 export const resolveMediaPath = (raw?: string | null) => {
   if (!raw) return '';
   if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
-  if (raw.startsWith('/siteid/')) return raw;
-  if (raw.startsWith('/media/')) return raw;
-  const normalized = raw.startsWith('/') ? raw : `/${raw}`;
-  return `/media${normalized}`;
+
+  const normalized = ensureLeadingSlash(raw);
+
+  if (normalized.startsWith('/media/')) return normalized;
+
+  if (proxyPrefixes.some((prefix) => normalized.startsWith(prefix))) {
+    return `/media${normalized}`;
+  }
+
+  return normalized;
 };
 
 export const mediaProvider = (src?: string | null) => {

@@ -43,10 +43,10 @@ const formattedDate = computed(() => {
       <div class="flex flex-col p-4 rounded-[0.625rem] bg-background-02" style="border: 1px solid var(--border);">
         <div class="flex gap-4 w-full max-[541px]:gap-2">
           <div class="block w-20 min-w-20 h-20 min-h-20 bg-background-02 rounded-full overflow-hidden" style="border: 1px solid var(--border);">
-            <img
+            <NuxtImg
               v-for="(image, imgIndex) in authorPictures"
               :key="imgIndex"
-              :src="image?.path ? `/media${image.path}` : placeholderAvatar"
+              :src="image?.path || placeholderAvatar"
               :alt="image?.alt || 'author'"
               class="w-full h-full object-cover"
             />
@@ -75,4 +75,3 @@ const formattedDate = computed(() => {
     </div>
   </section>
 </template>
-

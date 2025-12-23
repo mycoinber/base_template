@@ -111,13 +111,16 @@ export default defineNuxtConfig({
   },
   plugins: ["~/plugins/vue-query.ts"],
   image: {
-    provider: "ipx",
+    provider: "mediaProxy",
     dir: "public",
-    domains: [
-      process.env.BACK_HOST
-        ? new URL(process.env.BACK_HOST).hostname
-        : "localhost:3077",
-    ],
+    providers: {
+      mediaProxy: {
+        provider: "~/providers/mediaProxy",
+        options: {
+          baseURL: "/media",
+        },
+      },
+    },
     alias: {
       unsplash: process.env.BACK_HOST || "http://localhost:3077",
     },

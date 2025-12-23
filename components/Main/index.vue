@@ -80,8 +80,8 @@ if (import.meta.server) {
     v-if="heroMedia"
     class="relative w-full mb-8 overflow-hidden rounded-[0.625rem] border border-border"
   >
-    <img
-      :src="`/media${heroMedia?.path || ''}`"
+    <NuxtImg
+      :src="heroMedia?.path || ''"
       :alt="heroAlt"
       class="w-full h-full object-cover"
       loading="lazy"

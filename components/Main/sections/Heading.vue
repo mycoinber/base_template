@@ -58,8 +58,8 @@ const image = computed(() => {
         </div>
 
         <div v-if="image" class="flex-1 rounded-[0.625rem] overflow-hidden">
-          <img
-            :src="`/media${image.path}`"
+          <NuxtImg
+            :src="image.path"
             :alt="image.alt || block.headline || 'section image'"
             class="w-full h-full object-cover"
           />

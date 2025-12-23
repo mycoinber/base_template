@@ -61,7 +61,12 @@ const resolvedLogo = computed(() => {
       <div class="flex items-center justify-between gap-4 py-4">
         <div class="min-w-12 h-12 min-h-12 rounded overflow-hidden max-[541px]:min-w-8 max-[541px]:h-8 max-[541px]:min-h-8">
           <NuxtLink to="/" class="w-full h-full block">
-            <img v-if="resolvedLogo" :src="`/media${resolvedLogo?.path || ''}`" :alt="resolvedLogo?.alt || 'logo'" class="w-full h-full object-contain" />
+            <NuxtImg
+              v-if="resolvedLogo"
+              :src="resolvedLogo?.path || ''"
+              :alt="resolvedLogo?.alt || 'logo'"
+              class="w-full h-full object-contain"
+            />
           </NuxtLink>
         </div>
 

@@ -39,9 +39,16 @@ const heroSections = computed(() => {
 
       <div class="flex items-center justify-center w-full h-[40rem] relative rounded-[0.625rem] overflow-hidden max-[541px]:h-80">
         <div class="absolute top-0 left-0 w-full h-full">
-          <img v-if="data.offer?.background?.[0]?.path" :src="`/media${data.offer.background[0].path}`"
-            provider="none" class="w-full h-full object-cover" />
-          <img v-else :src="`/media${data.hero[0]?.path}`" provider="none" class="w-full h-full object-cover" />
+          <NuxtImg
+            v-if="data.offer?.background?.[0]?.path"
+            :src="data.offer.background[0].path"
+            class="w-full h-full object-cover"
+          />
+          <NuxtImg
+            v-else
+            :src="data.hero[0]?.path || ''"
+            class="w-full h-full object-cover"
+          />
         </div>
 
         <GeneralButtonThree :data="{
@@ -57,7 +64,12 @@ const heroSections = computed(() => {
       <template v-for="section in heroSections" :key="section._id">
       <div class="flex flex-col w-full p-4 relative border border-border rounded-[0.625rem] bg-background-02">
         <div class="absolute -left-4 -top-4 w-14 h-14 rounded-full border border-border overflow-hidden max-[541px]:-left-2 max-[541px]:-top-2 max-[541px]:w-12 max-[541px]:h-12">
-          <img v-if="section.images?.[0]?.path" :src="`/media${section.images[0].path}`" :alt="section.headline" class="w-full h-full object-cover" />
+          <NuxtImg
+            v-if="section.images?.[0]?.path"
+            :src="section.images[0].path"
+            :alt="section.headline"
+            class="w-full h-full object-cover"
+          />
           <NuxtImg v-else src="/bg.png" :alt="section.headline" class="w-full h-full object-cover" />
         </div>
 
@@ -86,4 +98,3 @@ const heroSections = computed(() => {
     </div>
   </div>
 </template>
-

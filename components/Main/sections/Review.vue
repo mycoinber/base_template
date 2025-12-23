@@ -10,13 +10,13 @@ const placeholderAvatar = '/avatar-placeholder.svg';
 
 const resolveAvatar = (review) => {
   if (Array.isArray(review?.author?.picture) && review.author.picture.length) {
-    return `/media${review.author.picture[0].path}`;
+    return review.author.picture[0].path;
   }
   if (review?.authorAvatarMedia?.path) {
-    return `/media${review.authorAvatarMedia.path}`;
+    return review.authorAvatarMedia.path;
   }
   if (review?.authorAvatar?.path) {
-    return `/media${review.authorAvatar.path}`;
+    return review.authorAvatar.path;
   }
   return placeholderAvatar;
 };
@@ -48,7 +48,7 @@ const formatDate = (raw) => {
           >
             <div class="flex gap-4">
               <div class="w-20 h-20 rounded-full overflow-hidden" style="border: 1px solid var(--border);">
-                <img
+                <NuxtImg
                   :src="resolveAvatar(review)"
                   alt="author"
                   itemprop="image"

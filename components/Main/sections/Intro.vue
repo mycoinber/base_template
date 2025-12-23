@@ -46,9 +46,9 @@ const heroImage = computed(() => heroImages.value[0] || null);
         class="absolute top-0 left-0 w-full h-full -z-[2] opacity-0 transition-opacity duration-300 max-[541px]:opacity-100"
         :class="{ 'opacity-100': page.offer }"
       >
-        <img
+        <NuxtImg
           v-if="heroImage?.path"
-          :src="`/media${heroImage.path}`"
+          :src="heroImage.path"
           :alt="heroImage?.alt || 'hero'"
           class="w-full h-full object-cover max-[541px]:object-contain max-[541px]:object-top"
         />
