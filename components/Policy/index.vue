@@ -59,9 +59,11 @@ if (import.meta.server) {
   </div>
   <section class="w-full h-[65rem] relative z-[2] mb-16 max-[541px]:h-fit">
     <div class="container">
-      <DelayHydration>
-        <MainHero v-if="!isBot" :data="data" />
-      </DelayHydration>
+      <ClientOnly>
+        <DelayHydration>
+          <MainHero v-if="!isBot" :data="data" />
+        </DelayHydration>
+      </ClientOnly>
       <div class="absolute top-0 left-0 w-full h-full -z-[2]">
         <img :src="`/media${data.hero[0]?.path || ''}`" :alt="data.hero[0]?.alt || 'hero'" class="w-full h-full object-cover max-[541px]:object-contain max-[541px]:object-top" />
       </div>
@@ -74,12 +76,13 @@ if (import.meta.server) {
 
   <MainSection v-for="(item, index) in sections" :data="item" />
 
-  <DelayHydration>
-    <MainFaq v-if="faqs" :data="faqs" />
-  </DelayHydration>
+  <ClientOnly>
+    <DelayHydration>
+      <MainFaq v-if="faqs" :data="faqs" />
+    </DelayHydration>
+  </ClientOnly>
 
   <MainAuthor v-if="data.aiauthor" :data="data" />
 
   <MainReview v-if="reviews" :data="reviews" />
 </template>
-

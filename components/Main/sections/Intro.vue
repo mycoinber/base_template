@@ -1,5 +1,5 @@
 <script setup>
-import MainHero from '../Hero.client.vue';
+import MainHero from '../Hero.vue';
 
 const props = defineProps({
   block: {
@@ -36,9 +36,11 @@ const heroImage = computed(() => heroImages.value[0] || null);
     :class="{ 'w-full h-[65rem]': page.offer }"
   >
     <div class="container">
-      <DelayHydration>
-        <MainHero v-if="!isBot" :data="page" />
-      </DelayHydration>
+      <ClientOnly>
+        <DelayHydration>
+          <MainHero v-if="!isBot" :data="page" />
+        </DelayHydration>
+      </ClientOnly>
 
       <div
         class="absolute top-0 left-0 w-full h-full -z-[2] opacity-0 transition-opacity duration-300 max-[541px]:opacity-100"

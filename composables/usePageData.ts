@@ -109,7 +109,11 @@ export function usePageData(siteId: string, slug: string | null) {
     if (slug) params.slug = slug;
     try {
       const response = await $axios.get(`/pages/${siteId}`, { params: Object.keys(params).length ? params : undefined });
-      return normalizePageResponse(response.data || {}, slug);
+      const payload = response.data || {};
+      if (process.dev) {
+        console.info('[usePageData] Fetched page payload:', payload);
+      }
+      return normalizePageResponse(payload, slug);
     } catch (error: any) {
       const status = error?.response?.status;
       if (status && status !== 404) {

@@ -1,10 +1,12 @@
 import { computed, unref, type Ref } from 'vue'
+import type { AxiosInstance } from 'axios'
 import { useQuery } from '@tanstack/vue-query'
 
 type MaybeRef<T> = T | Ref<T>
 
 export function useOffer(offerId: MaybeRef<string | null | undefined>) {
-  const { $axios } = useNuxtApp()
+  const nuxtApp = useNuxtApp()
+  const $axios = nuxtApp.$axios as AxiosInstance
 
   const enabled = computed(() => Boolean(unref(offerId)) && import.meta.client)
 
@@ -29,4 +31,3 @@ export function useOffer(offerId: MaybeRef<string | null | undefined>) {
     refetch: query.refetch,
   }
 }
-

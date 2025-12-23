@@ -1,6 +1,13 @@
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
+const SITE_ID = process.env.SITE_ID;
+if (!SITE_ID) {
+  throw new Error("SITE_ID environment variable is required for sitemap/robots generation");
+}
+const SITEMAP_API_BASE =
+  process.env.SITEMAP_API_BASE || "https://api.pbnmaster.online";
+
 export default defineNuxtConfig({
   devtools: { enabled: false },
   ssr: true,
@@ -30,7 +37,7 @@ export default defineNuxtConfig({
     cacheMaxAgeSeconds: 0,
     excludeAppSources: true,
     sources: [
-      `https://api.pbnmaster.online/sites/sitemap?siteId=${process.env.SITE_ID}`,
+      `${SITEMAP_API_BASE.replace(/\/$/, "")}/sites/sitemap?siteId=${SITE_ID}`,
     ],
   },
   vitalizer: {
@@ -85,19 +92,21 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      siteId: process.env.SITE_ID,
+      siteId: SITE_ID,
       globalHead: JSON.parse(
         readFileSync(resolve("site.json"), "utf-8")
       ) as any, // Приведение к any
       mediaStorageUrl: process.env.MEDIA_STORAGE_URL,
+      sitemapApiBase: SITEMAP_API_BASE,
     },
     server: {
-      siteId: process.env.SITE_ID,
+      siteId: SITE_ID,
       backHost: process.env.BACK_HOST_SV,
       globalHead: JSON.parse(
         readFileSync(resolve("site.json"), "utf-8")
       ) as any, // Приведение к any
       mediaStorageUrl: process.env.MEDIA_STORAGE_URL,
+      sitemapApiBase: SITEMAP_API_BASE,
     },
   },
   plugins: ["~/plugins/vue-query.ts"],
