@@ -36,14 +36,18 @@ if (!manifestResponse.ok) {
 
 const manifest = await manifestResponse.json();
 
+await mkdir(publicDir, { recursive: true });
+
+const manifestOutputPath = join(publicDir, 'site-manifest.json');
+await writeFile(manifestOutputPath, JSON.stringify(manifest, null, 2));
+console.log(`[fetch-manifest] Manifest cached at ${manifestOutputPath}`);
+
 const assets = collectAssetsFromManifest(manifest, storageBase);
 
 if (!assets.size) {
   console.warn('[fetch-manifest] No assets discovered in manifest');
   process.exit(0);
 }
-
-await mkdir(publicDir, { recursive: true });
 
 let successCount = 0;
 for (const [targetName, sourceUrl] of assets.entries()) {
