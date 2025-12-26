@@ -3,7 +3,7 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, join, basename, extname } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -42,7 +42,9 @@ const manifestOutputPath = join(publicDir, 'site-manifest.json');
 await writeFile(manifestOutputPath, JSON.stringify(manifest, null, 2));
 console.log(`[fetch-manifest] Manifest cached at ${manifestOutputPath}`);
 
-const assets = collectAssetsFromManifest(manifest, storageBase);
+const { assets, manifestFile } = collectAssetsFromManifest(manifest, storageBase);
+
+const downloadedTargets = new Set(assets.keys());
 
 if (!assets.size) {
   console.warn('[fetch-manifest] No assets discovered in manifest');
@@ -60,6 +62,14 @@ for (const [targetName, sourceUrl] of assets.entries()) {
     process.exit(1);
   }
 }
+
+const additionalCount = await downloadManifestEmbeddedAssets({
+  manifestFile,
+  storageBase,
+  downloadedTargets,
+});
+
+successCount += additionalCount;
 
 console.log(`[fetch-manifest] Downloaded ${successCount} asset(s) to ${publicDir}`);
 
@@ -80,6 +90,7 @@ function resolveManifestUrl() {
 
 function collectAssetsFromManifest(manifestPayload, storageBaseUrl) {
   const assetMap = new Map();
+  let manifestFile = null;
 
   const addAsset = (source, target) => {
     if (!source || !target) {
@@ -93,6 +104,12 @@ function collectAssetsFromManifest(manifestPayload, storageBaseUrl) {
     const rawUrl = icon?.s3Url || icon?.href;
     const resolved = resolveAssetUrl(rawUrl, storageBaseUrl);
     const filename = icon?.fileName || (rawUrl ? basename(rawUrl) : null);
+    if (!manifestFile && filename && filename.toLowerCase().endsWith('.webmanifest')) {
+      manifestFile = {
+        fileName: filename,
+        rawPath: rawUrl || null,
+      };
+    }
     addAsset(resolved, filename);
   }
 
@@ -123,7 +140,7 @@ function collectAssetsFromManifest(manifestPayload, storageBaseUrl) {
     addAsset(resolved, basename(trimmed));
   }
 
-  return assetMap;
+  return { assets: assetMap, manifestFile };
 }
 
 async function downloadAsset(sourceUrl, destinationPath) {
@@ -156,6 +173,108 @@ function resolveAssetUrl(rawUrl, storageBaseUrl) {
   }
 
   return `${storageBaseUrl}${rawUrl}`;
+}
+
+async function downloadManifestEmbeddedAssets({ manifestFile, storageBase, downloadedTargets }) {
+  if (!manifestFile?.fileName) {
+    return 0;
+  }
+
+  const localPath = join(publicDir, manifestFile.fileName);
+  if (!existsSync(localPath)) {
+    console.warn('[fetch-manifest] Manifest file not found locally:', localPath);
+    return 0;
+  }
+
+  let manifestContent;
+  try {
+    const raw = await readFile(localPath, 'utf-8');
+    manifestContent = JSON.parse(raw);
+  } catch (error) {
+    console.warn('[fetch-manifest] Failed to parse manifest.webmanifest:', error);
+    return 0;
+  }
+
+  const manifestBasePath = manifestFile.rawPath ? extractManifestBase(manifestFile.rawPath) : '';
+  const additionalAssets = new Map();
+
+  const register = (src) => {
+    if (typeof src !== 'string' || !src.trim()) {
+      return;
+    }
+    const normalizedSrc = src.trim();
+    if (/^https?:\/\//i.test(normalizedSrc) || normalizedSrc.startsWith('data:')) {
+      return;
+    }
+
+    const combinedPath = joinManifestPath(manifestBasePath, normalizedSrc);
+    const resolvedUrl = resolveAssetUrl(combinedPath, storageBase);
+    const targetName = basename(normalizedSrc).replace(/^\/+/, '');
+    if (!resolvedUrl || !targetName || downloadedTargets.has(targetName)) {
+      return;
+    }
+    additionalAssets.set(targetName, resolvedUrl);
+    downloadedTargets.add(targetName);
+  };
+
+  const icons = Array.isArray(manifestContent?.icons) ? manifestContent.icons : [];
+  for (const icon of icons) {
+    register(icon?.src);
+  }
+
+  const screenshots = Array.isArray(manifestContent?.screenshots) ? manifestContent.screenshots : [];
+  for (const shot of screenshots) {
+    register(shot?.src);
+  }
+
+  const shortcuts = Array.isArray(manifestContent?.shortcuts) ? manifestContent.shortcuts : [];
+  for (const shortcut of shortcuts) {
+    if (Array.isArray(shortcut?.icons)) {
+      for (const shortcutIcon of shortcut.icons) {
+        register(shortcutIcon?.src);
+      }
+    }
+  }
+
+  if (!additionalAssets.size) {
+    return 0;
+  }
+
+  let count = 0;
+  for (const [targetName, sourceUrl] of additionalAssets.entries()) {
+    console.log(`[fetch-manifest] Downloading manifest asset ${sourceUrl} → ${targetName}`);
+    try {
+      await downloadAsset(sourceUrl, join(publicDir, targetName));
+      count += 1;
+    } catch (error) {
+      console.error(`[fetch-manifest] Failed to download ${sourceUrl}:`, error);
+      throw error;
+    }
+  }
+
+  return count;
+}
+
+function extractManifestBase(rawPath) {
+  if (!rawPath) {
+    return '';
+  }
+  const withoutQuery = rawPath.replace(/[#?].*$/, '');
+  const slashIndex = withoutQuery.lastIndexOf('/');
+  return slashIndex === -1 ? '' : withoutQuery.slice(0, slashIndex + 1);
+}
+
+function joinManifestPath(basePath, relativePath) {
+  if (!basePath) {
+    return relativePath;
+  }
+  if (!relativePath) {
+    return basePath;
+  }
+  const cleanedBase = basePath.endsWith('/') ? basePath : `${basePath}/`;
+  return relativePath.startsWith('/')
+    ? `${cleanedBase}${relativePath.replace(/^\/+/, '')}`
+    : `${cleanedBase}${relativePath}`;
 }
 
 function loadEnvFile(envPath) {
