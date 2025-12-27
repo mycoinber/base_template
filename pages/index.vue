@@ -23,11 +23,7 @@ const slug = route.params.slug || null;
 
 const { data, status, error } = await usePageData(siteId, slug);
 
-const { data: siteManifestRaw } = await useFetch("/site-manifest.json", {
-  key: "site-manifest",
-  server: true,
-  default: () => null,
-});
+const { data: siteManifestRaw } = await useSiteManifest();
 
 const manifestHead = computed(() => manifestToHead(siteManifestRaw.value));
 
