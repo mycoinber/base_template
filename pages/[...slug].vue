@@ -28,9 +28,13 @@ const slugArray = Array.isArray(rawSlug)
     ? rawSlug.split("/")
     : [];
 
-const slug = slugArray[slugArray.length - 1] || "";
+const slug = slugArray.length ? slugArray.join("/") : "";
 // Получаем данные страницы
 const { data, status, error } = await usePageData(siteId, slug);
+
+if (error.value) {
+  throw error.value;
+}
 
 const { data: siteManifestRaw } = await useSiteManifest();
 

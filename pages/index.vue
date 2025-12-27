@@ -23,6 +23,10 @@ const slug = route.params.slug || null;
 
 const { data, status, error } = await usePageData(siteId, slug);
 
+if (error.value) {
+  throw error.value;
+}
+
 const { data: siteManifestRaw } = await useSiteManifest();
 
 const manifestHead = computed(() => manifestToHead(siteManifestRaw.value));
