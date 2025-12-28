@@ -95,7 +95,7 @@ export default defineNuxtConfig({
       siteId: SITE_ID,
       globalHead: JSON.parse(
         readFileSync(resolve("site.json"), "utf-8")
-      ) as any, // Приведение к any
+      ) as any,
       mediaStorageUrl: process.env.MEDIA_STORAGE_URL,
       sitemapApiBase: SITEMAP_API_BASE,
     },
@@ -104,7 +104,7 @@ export default defineNuxtConfig({
       backHost: process.env.BACK_HOST_SV,
       globalHead: JSON.parse(
         readFileSync(resolve("site.json"), "utf-8")
-      ) as any, // Приведение к any
+      ) as any,
       mediaStorageUrl: process.env.MEDIA_STORAGE_URL,
       sitemapApiBase: SITEMAP_API_BASE,
     },
