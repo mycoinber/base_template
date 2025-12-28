@@ -1,12 +1,6 @@
 import { readFileSync } from "fs";
 import { resolve } from "path";
-
-const SITE_ID = process.env.SITE_ID;
-if (!SITE_ID) {
-  throw new Error("SITE_ID environment variable is required for sitemap/robots generation");
-}
-const SITEMAP_API_BASE =
-  process.env.SITEMAP_API_BASE || "https://api.pbnmaster.online";
+import { SITE_ID, SITEMAP_API_BASE } from "./utils/remote-sitemap";
 
 export default defineNuxtConfig({
   devtools: { enabled: false },
@@ -36,9 +30,7 @@ export default defineNuxtConfig({
     xsl: false,
     cacheMaxAgeSeconds: 0,
     excludeAppSources: true,
-    sources: [
-      `${SITEMAP_API_BASE.replace(/\/$/, "")}/sites/sitemap?siteId=${SITE_ID}`,
-    ],
+    sources: [],
   },
   vitalizer: {
     delayHydration: {
