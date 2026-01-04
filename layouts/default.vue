@@ -4,15 +4,11 @@ import { useNuxtApp } from "#app";
 import { useAsyncData } from "#app";
 
 const { $axios } = useNuxtApp();
-const config = useRuntimeConfig();
-const siteId = import.meta.server
-  ? config.server.siteId
-  : config.public.siteId;
 const styles = useCssModule();
 
-const fetchPages = async (siteId) => {
+const fetchPages = async () => {
   try {
-    const response = await $axios.get(`/pages/nav?siteId=${siteId}`);
+    const response = await $axios.get(`/nav`);
     if (process.dev) {
       console.info('[layout] fetched nav data:', response.data);
     }
@@ -35,7 +31,7 @@ const fetchPages = async (siteId) => {
   }
 };
 
-const { data, error } = useAsyncData("pages", () => fetchPages(siteId), {
+const { data, error } = useAsyncData("pages", () => fetchPages(), {
   ssr: true,
 });
 

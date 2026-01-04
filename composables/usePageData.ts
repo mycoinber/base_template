@@ -102,13 +102,14 @@ const normalizePageResponse = (payload: AnyObject, slug: string | null) => {
   };
 };
 
-const buildPageEndpoint = (siteId: string, slug: string | null) => {
-  const encodedSiteId = encodeURIComponent(siteId);
+const buildPageEndpoint = (slug: string | null) => {
   const segments = typeof slug === "string" && slug.trim()
     ? slug.split("/").filter(Boolean).map((segment) => encodeURIComponent(segment))
     : [];
-  const slugPath = segments.length ? `/${segments.join("/")}` : "";
-  return `/pages/${encodedSiteId}${slugPath}`;
+  if (!segments.length) {
+    return "/pages";
+  }
+  return `/pages/${segments.join("/")}`;
 };
 
 export function usePageData(siteId: string, slug: string | null) {
@@ -122,7 +123,7 @@ export function usePageData(siteId: string, slug: string | null) {
 
   const fetchPage = async () => {
     try {
-      const endpoint = buildPageEndpoint(siteId, slug);
+      const endpoint = buildPageEndpoint(slug);
       const response = await $axios.get(endpoint);
       const payload = response.data || {};
       if (process.dev) {
