@@ -1,14 +1,18 @@
-import { defineEventHandler, getQuery, createError } from 'h3';
+import { defineEventHandler, getQuery, createError } from "h3";
 
 export default defineEventHandler(async (event) => {
   const { siteId } = getQuery(event);
+  const q = getQuery(event);
+  console.log("[pages/nav] url=", event.node.req.url);
+  console.log("[pages/nav] query=", q);
+  console.log("[pages/nav] siteId=", siteId);
   if (!siteId) {
-    throw createError({ statusCode: 400, statusMessage: 'siteId is required' });
+    throw createError({ statusCode: 400, statusMessage: "siteId is required" });
   }
   const config = useRuntimeConfig(event);
-  const backendBase = (config.server as any).backHost?.replace(/\/$/, '') || '';
+  const backendBase = (config.server as any).backHost?.replace(/\/$/, "") || "";
   if (!backendBase) {
-    console.error('[proxy] /pages/nav missing backend host', {
+    console.error("[proxy] /pages/nav missing backend host", {
       siteId,
       configuredBackHost: (config.server as any).backHost,
       envBackHost:
@@ -19,7 +23,7 @@ export default defineEventHandler(async (event) => {
     });
     throw createError({
       statusCode: 500,
-      statusMessage: 'BACKEND_URL/BACK_HOST is not configured',
+      statusMessage: "BACKEND_URL/BACK_HOST is not configured",
     });
   }
   try {
@@ -29,18 +33,18 @@ export default defineEventHandler(async (event) => {
     });
 
     if (process.dev) {
-      console.info('[proxy] /pages/nav result:', { endpoint, result });
+      console.info("[proxy] /pages/nav result:", { endpoint, result });
     }
 
     return result;
   } catch (error: any) {
     const statusCode = error?.statusCode || error?.response?.status || 500;
-    console.error('[Proxy Error] /pages/nav:', {
+    console.error("[Proxy Error] /pages/nav:", {
       endpoint: `${backendBase}/pages/nav`,
       statusCode,
       siteId,
       data: error?.data || error?.response?.data || error?.message,
     });
-    throw createError({ statusCode, statusMessage: 'Failed to fetch nav' });
+    throw createError({ statusCode, statusMessage: "Failed to fetch nav" });
   }
 });
