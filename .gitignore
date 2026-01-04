@@ -12,6 +12,7 @@
 /node_modules
 /public/*
 /.nuxt
+/.output
 
 # misc
 .DS_Store

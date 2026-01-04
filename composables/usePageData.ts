@@ -1,5 +1,6 @@
 // composables/usePageData.ts
 import { useNuxtApp, useAsyncData } from "#app";
+import { createError } from "#imports";
 import { watch } from "vue";
 
 type AnyObject = Record<string, any>;
@@ -125,12 +126,12 @@ export function usePageData(siteId: string, slug: string | null) {
       }
       return normalized;
     } catch (error: any) {
-      const status = error?.response?.status;
-      if (status && status !== 404) {
-        const message = error?.response?.data?.message || error?.message || String(error);
-        console.warn("Ошибка запроса:", message);
+      const status = Number(error?.response?.status) || 500;
+      const message = error?.response?.data?.message || error?.message || "Failed to fetch page";
+      if (process.dev) {
+        console.warn('[usePageData] Request failed:', { status, message });
       }
-      return {};
+      throw createError({ statusCode: status, statusMessage: message });
     }
   };
 

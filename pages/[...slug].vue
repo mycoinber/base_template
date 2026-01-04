@@ -9,6 +9,8 @@
 
 <script setup>
 import { useI18n } from "vue-i18n";
+import { manifestToHead } from "~/utils/manifestHead";
+import { dedupeLinks, dedupeMeta, toContentString } from "~/utils/headUtils";
 const { locale } = useI18n();
 const url = useRequestURL();
 const siteDomain = `${url.protocol}//${url.host}`;
@@ -26,9 +28,17 @@ const slugArray = Array.isArray(rawSlug)
     ? rawSlug.split("/")
     : [];
 
-const slug = slugArray[slugArray.length - 1] || "";
+const slug = slugArray.length ? slugArray.join("/") : "";
 // Получаем данные страницы
 const { data, status, error } = await usePageData(siteId, slug);
+
+if (error.value) {
+  throw error.value;
+}
+
+const { data: siteManifestRaw } = await useSiteManifest();
+
+const manifestHead = computed(() => manifestToHead(siteManifestRaw.value));
 
 // --- HEAD LOGIC ---
 
@@ -39,11 +49,12 @@ const pageSlug = computed(() => data.value?.slug || slug || "");
 
 // Парсим глобальные <meta> и <link>
 const globalHeadRaw = import.meta.server ? config.server.globalHead : config.public.globalHead;
+const globalHeadSource = Array.isArray(globalHeadRaw) ? globalHeadRaw : [];
 const globalHead = {
-  link: (globalHeadRaw || [])
+  link: globalHeadSource
     .filter(tag => tag.startsWith("<link"))
     .map(tag => Object.fromEntries(Array.from(tag.matchAll(/(\w+)=["'](.*?)["']/g)).map(([_, name, value]) => [name, value]))),
-  meta: (globalHeadRaw || [])
+  meta: globalHeadSource
     .filter(tag => tag.startsWith("<meta"))
     .map(tag => Object.fromEntries(Array.from(tag.matchAll(/(\w+)=["'](.*?)["']/g)).map(([_, name, value]) => [name, value]))),
 };
@@ -51,75 +62,106 @@ const globalHead = {
 // === Универсальный headMeta с поддержкой robots.metaTags ===
 const headMeta = computed(() => {
   const baseMeta = [
-    { name: "description", content: pageHead.value.description },
-    { name: "keywords", content: pageHead.value.keywords },
-    { property: "og:title", content: pageHead.value.title },
-    { property: "og:description", content: pageHead.value.description },
-    { property: "og:image", content: data.value?.article?.introImage?.[0]?.path },
-    { property: "og:url", content: `${pageDomain.value}/${pageSlug.value}` },
+    { name: "description", content: toContentString(pageHead.value.description) },
+    { name: "keywords", content: toContentString(pageHead.value.keywords) },
+    { property: "og:title", content: toContentString(pageHead.value.title) },
+    { property: "og:description", content: toContentString(pageHead.value.description) },
+    { property: "og:image", content: toContentString(data.value?.article?.introImage?.[0]?.path) },
+    { property: "og:url", content: toContentString(`${pageDomain.value}/${pageSlug.value}`) },
     { property: "og:type", content: "article" },
-    { property: "og:locale", content: pageLang.value },
+    { property: "og:locale", content: toContentString(pageLang.value) },
     { name: "twitter:card", content: "summary_large_image" },
-    { name: "twitter:title", content: pageHead.value.title },
-    { name: "twitter:description", content: pageHead.value.description },
-    { name: "twitter:image", content: data.value?.article?.introImage?.[0]?.path },
+    { name: "twitter:title", content: toContentString(pageHead.value.title) },
+    { name: "twitter:description", content: toContentString(pageHead.value.description) },
+    { name: "twitter:image", content: toContentString(data.value?.article?.introImage?.[0]?.path) },
   ];
 
   const metaArray = Array.isArray(pageHead.value.meta) ? pageHead.value.meta : [];
   const globalMeta = globalHead.meta || [];
+  const manifestMetaEntries = manifestHead.value.meta || [];
   const robotsMetaTags = Array.isArray(data.value?.robots?.metaTags) ? data.value.robots.metaTags : [];
 
-  // Оставляем только один robots (приоритет: page meta > robots.metaTags)
   let robotsMeta = metaArray.find(m => m.key === "robots" && m.type === "name")
     || robotsMetaTags.find(m => m.name === "robots");
 
   const metaWithoutRobots = metaArray.filter(m => m.key !== "robots");
   const robotsOtherMeta = robotsMetaTags.filter(m => m.name !== "robots");
+
+  const manifestNames = manifestMetaEntries
+    .map(entry => entry?.name)
+    .filter(Boolean);
+
   const usedNames = new Set([
     ...metaWithoutRobots.map(m => m.key),
+    ...manifestNames,
     ...(globalMeta.map(m => m.name).filter(Boolean)),
   ]);
   const robotsOtherMetaFiltered = robotsOtherMeta.filter(m => !usedNames.has(m.name));
 
-  // sanitize and coerce to strings to avoid Unhead errors
-  const result = [
+  const pageMetaEntries = metaWithoutRobots
+    .map(m => {
+      const attrName = m?.type === "property" ? "property" : m?.type === "httpEquiv" ? "httpEquiv" : "name";
+      const attrValue = m?.key != null ? String(m.key) : "";
+      if (!attrName || !attrValue) return null;
+      const entry = { [attrName]: attrValue };
+      const content = toContentString(m?.content);
+      if (content !== undefined) entry.content = content;
+      return entry;
+    })
+    .filter(Boolean);
+
+  const robotsEntry = robotsMeta
+    ? [{
+        name: "robots",
+        content: toContentString(robotsMeta.content ?? robotsMeta.value),
+      }].filter(item => item.content !== undefined)
+    : [];
+
+  const robotsOtherEntries = robotsOtherMetaFiltered
+    .map(m => {
+      const name = m?.name != null ? String(m.name) : "";
+      if (!name) return null;
+      const content = toContentString(m?.content ?? m?.value);
+      const entry = { name };
+      if (content !== undefined) entry.content = content;
+      return entry;
+    })
+    .filter(Boolean);
+
+  const combined = [
     ...baseMeta,
-    ...metaWithoutRobots
-      .map(m => {
-        const attrName = m?.type === "property" ? "property" : m?.type === "httpEquiv" ? "httpEquiv" : "name";
-        const attrValue = m?.key != null ? String(m.key) : "";
-        if (!attrName || !attrValue) return null;
-        return {
-          [attrName]: attrValue,
-          content: m?.content != null ? String(m.content) : undefined,
-        };
-      })
-      .filter(Boolean),
-    ...(robotsMeta ? [{
-      name: "robots",
-      content: robotsMeta.content || robotsMeta.value
-    }] : []),
-    ...robotsOtherMetaFiltered
-      .map(m => ({
-        name: m?.name != null ? String(m.name) : "",
-        content: m?.content != null ? String(m.content) : undefined,
-      }))
-      .filter(m => m.name),
-    ...globalMeta
-  ];
-  return result;
+    ...pageMetaEntries,
+    ...robotsEntry,
+    ...robotsOtherEntries,
+    ...manifestMetaEntries,
+    ...globalMeta,
+  ].filter(Boolean);
+
+  return dedupeMeta(combined);
 });
 
-const headLinks = computed(() => [
-  { rel: "canonical", href: `${pageDomain.value}/${pageSlug.value}` },
-  { rel: "alternate", hreflang: pageLang.value, href: `${siteDomain}/${pageSlug.value}` },
-  ...(Array.isArray(data.value?.alters) ? data.value.alters.map(alter => ({
-    rel: "alternate",
-    hreflang: alter.hreflang,
-    href: `${siteDomain}/${alter.slug}/`
-  })) : []),
-  ...(globalHead.link || []),
-]);
+
+const headLinks = computed(() => {
+  const manifestLinks = manifestHead.value.link || [];
+  const alternateLinks = Array.isArray(data.value?.alters)
+    ? data.value.alters.map(alter => ({
+        rel: "alternate",
+        hreflang: alter.hreflang,
+        href: `${siteDomain}/${alter.slug}/`,
+      }))
+    : [];
+
+  const combined = [
+    { rel: "canonical", href: `${pageDomain.value}/${pageSlug.value}` },
+    { rel: "alternate", hreflang: pageLang.value, href: `${siteDomain}/${pageSlug.value}` },
+    ...alternateLinks,
+    ...manifestLinks,
+    ...(globalHead.link || []),
+  ].filter(Boolean);
+
+  return dedupeLinks(combined);
+});
+
 
 const headScripts = computed(() => [
   ...(Array.isArray(data.value?.pixel) && data.value.pixel.length > 0 ? [{

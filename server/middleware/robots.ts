@@ -1,5 +1,9 @@
 import { defineEventHandler } from "h3";
 import { $fetch } from "ofetch";
+import type { TLSSocket } from "node:tls";
+
+const isTlsSocket = (socket: unknown): socket is TLSSocket =>
+  Boolean(socket && typeof socket === "object" && "encrypted" in socket);
 
 export default defineEventHandler(async (event) => {
   if (event.path === "/robots.txt") {
@@ -10,7 +14,9 @@ export default defineEventHandler(async (event) => {
     const host = event.node.req.headers["host"] || "localhost:3000";
     const proto =
       event.node.req.headers["x-forwarded-proto"] ||
-      (event.node.req.connection.encrypted ? "https" : "http");
+      (isTlsSocket(event.node.req.socket) && event.node.req.socket.encrypted
+        ? "https"
+        : "http");
     const baseUrl = `${proto}://${host}`;
     const siteUrl = baseUrl;
 

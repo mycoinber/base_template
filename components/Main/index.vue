@@ -56,7 +56,7 @@ const resolveSection = (type) => {
   return sectionComponents[key] || sectionComponents.default;
 };
 
-const isLoaded = ref(false);
+const isLoaded = ref(import.meta.server);
 const isBot = useState('isBot', () => false);
 
 if (import.meta.server) {
