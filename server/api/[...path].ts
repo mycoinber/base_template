@@ -4,7 +4,10 @@ import {
   proxyRequest,
   getProxyRequestHeaders,
   getQuery,
+  getHeader,
 } from "h3";
+import type { H3Event } from "h3";
+import { parseQuery } from "ufo";
 
 export default defineEventHandler(async (event) => {
   const runtimeConfig = useRuntimeConfig(event);
@@ -18,7 +21,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const query = getQuery(event); // { slug: 'grey-eagle-online-casino-in-canada' }
+  const query = mergeQuery(event);
   const slug = String(query.slug || "");
 
   // params из пути (если роут с параметрами)
@@ -37,7 +40,7 @@ export default defineEventHandler(async (event) => {
   const targetUrl = `${sanitizedBase}${
     upstreamPath.startsWith("/") ? "" : "/"
   }${upstreamPath}`;
-  const queryString = serializeQueryParams(getQuery(event));
+  const queryString = serializeQueryParams(query);
   const finalUrl = queryString ? `${targetUrl}?${queryString}` : targetUrl;
 
   console.log("[...] finalUrl=", finalUrl);
@@ -50,6 +53,35 @@ export default defineEventHandler(async (event) => {
     },
   });
 });
+
+const mergeQuery = (event: H3Event) => {
+  const primaryQuery = getQuery(event) as Record<string, unknown>;
+  const fallbackQuery = extractRouteMatchQuery(event);
+  return { ...fallbackQuery, ...primaryQuery };
+};
+
+const extractRouteMatchQuery = (event: H3Event) => {
+  const headerValue = getHeader(event, "x-now-route-matches");
+  if (!headerValue || typeof headerValue !== "string") {
+    return {} as Record<string, unknown>;
+  }
+  const parsed = parseQuery(headerValue);
+  const fallback: Record<string, unknown> = {};
+  const urlMatch = typeof parsed.url === "string" ? parsed.url : "";
+  if (urlMatch && urlMatch.includes("?")) {
+    const queryString = urlMatch.split("?")[1] || "";
+    Object.assign(fallback, parseQuery(queryString));
+  }
+  for (const [key, value] of Object.entries(parsed)) {
+    if (key === "url" || value === undefined || value === null) {
+      continue;
+    }
+    if (fallback[key] === undefined) {
+      fallback[key] = value;
+    }
+  }
+  return fallback;
+};
 
 const serializeQueryParams = (query: Record<string, unknown>) => {
   const params = new URLSearchParams();
