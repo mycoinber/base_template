@@ -3,6 +3,7 @@ import {
   createError,
   proxyRequest,
   getProxyRequestHeaders,
+  getQuery,
 } from "h3";
 
 export default defineEventHandler(async (event) => {
@@ -18,15 +19,18 @@ export default defineEventHandler(async (event) => {
   }
 
   const rawRequestUrl = event.node?.req?.url || "/";
-  const upstreamPath = rawRequestUrl.replace(/^\/api/, "") || "/";
+  const upstreamPath =
+    rawRequestUrl.split("?")[0]?.replace(/^\/api/, "") || "/";
   const sanitizedBase = backendBase.replace(/\/$/, "");
   const targetUrl = `${sanitizedBase}${
     upstreamPath.startsWith("/") ? "" : "/"
   }${upstreamPath}`;
-  console.log("[...] targetUrl=", targetUrl);
-  console.log("[...] event=", event);
+  const queryString = serializeQueryParams(getQuery(event));
+  const finalUrl = queryString ? `${targetUrl}?${queryString}` : targetUrl;
 
-  return proxyRequest(event, targetUrl, {
+  console.log("[...] finalUrl=", finalUrl);
+  console.log("[...] event=", event);
+  return proxyRequest(event, finalUrl, {
     fetchOptions: {
       headers: getProxyRequestHeaders(event, {
         exclude: ["host", "connection", "content-length"],
@@ -34,3 +38,22 @@ export default defineEventHandler(async (event) => {
     },
   });
 });
+
+const serializeQueryParams = (query: Record<string, unknown>) => {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === null) {
+      continue;
+    }
+    if (Array.isArray(value)) {
+      value.forEach((entry) => {
+        if (entry !== undefined && entry !== null) {
+          params.append(key, String(entry));
+        }
+      });
+      continue;
+    }
+    params.append(key, String(value));
+  }
+  return params.toString();
+};
