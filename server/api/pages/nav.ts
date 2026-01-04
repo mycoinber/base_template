@@ -6,6 +6,7 @@ export default defineEventHandler(async (event) => {
   console.log("[pages/nav] url=", event.node.req.url);
   console.log("[pages/nav] query=", q);
   console.log("[pages/nav] siteId=", siteId);
+  console.log("[pages/nav] event=", event);
   if (!siteId) {
     throw createError({ statusCode: 400, statusMessage: "siteId is required" });
   }
