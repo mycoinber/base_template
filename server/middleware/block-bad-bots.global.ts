@@ -1,6 +1,7 @@
 // server/middleware/block-bad-bots.global.ts
 export default defineEventHandler((event) => {
   const ua = (getHeader(event, "user-agent") || "").toString();
+  // console.log("[block-bad-bots] path=", event.path, "ua=", ua);
   // (необязательно) оставим "белый список" системных ботов/превью,
   // чтобы не ломать шаринг/проверки статуса и т.п.
   if (!ua) return;
@@ -13,6 +14,7 @@ export default defineEventHandler((event) => {
   );
 
   if (/(AhrefsBot|AhrefsSiteAudit)/i.test(ua)) {
+    console.log("[block-bad-bots] BLOCK", { path: event.path, ua });
     setResponseStatus(event, 403, "Forbidden");
     setHeader(event, "Cache-Control", "private, no-store, max-age=0");
     setHeader(event, "Content-Type", "text/plain; charset=utf-8");
@@ -21,6 +23,8 @@ export default defineEventHandler((event) => {
 
   if (BLOCK_RE.test(ua)) {
     // 403 и короткий текст — этого достаточно
+    console.log("[block-bad-bots] BLOCK", { path: event.path, ua });
+
     setResponseStatus(event, 403, "Forbidden");
     setHeader(event, "Cache-Control", "private, no-store, max-age=0");
     setHeader(event, "Content-Type", "text/plain; charset=utf-8");
