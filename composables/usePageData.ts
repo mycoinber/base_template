@@ -102,6 +102,15 @@ const normalizePageResponse = (payload: AnyObject, slug: string | null) => {
   };
 };
 
+const buildPageEndpoint = (siteId: string, slug: string | null) => {
+  const encodedSiteId = encodeURIComponent(siteId);
+  const segments = typeof slug === "string" && slug.trim()
+    ? slug.split("/").filter(Boolean).map((segment) => encodeURIComponent(segment))
+    : [];
+  const slugPath = segments.length ? `/${segments.join("/")}` : "";
+  return `/pages/${encodedSiteId}${slugPath}`;
+};
+
 export function usePageData(siteId: string, slug: string | null) {
   const { $axios } = useNuxtApp() as any;
 
@@ -112,10 +121,9 @@ export function usePageData(siteId: string, slug: string | null) {
   };
 
   const fetchPage = async () => {
-    const params: Record<string, any> = {};
-    if (slug) params.slug = slug;
     try {
-      const response = await $axios.get(`/pages/${siteId}`, { params: Object.keys(params).length ? params : undefined });
+      const endpoint = buildPageEndpoint(siteId, slug);
+      const response = await $axios.get(endpoint);
       const payload = response.data || {};
       if (process.dev) {
         console.info('[usePageData] Fetched page payload:', payload);
