@@ -1,16 +1,18 @@
 import { defineEventHandler, getQuery, createError } from "h3";
 
 export default defineEventHandler(async (event) => {
-  const { siteId } = getQuery(event);
-  const q = getQuery(event);
-  console.log("[pages/nav] url=", event.node.req.url);
-  console.log("[pages/nav] query=", q);
-  console.log("[pages/nav] siteId=", siteId);
-  console.log("[pages/nav] event=", event);
+  const query = getQuery(event);
+  const config = useRuntimeConfig(event);
+  const querySiteId = Array.isArray(query.siteId) ? query.siteId[0] : query.siteId;
+  const trimmedQueryId = typeof querySiteId === "string" ? querySiteId.trim() : "";
+  const siteId =
+    trimmedQueryId ||
+    (typeof config.server?.siteId === "string" ? config.server.siteId : "") ||
+    (typeof config.public?.siteId === "string" ? config.public.siteId : "");
+
   if (!siteId) {
     throw createError({ statusCode: 400, statusMessage: "siteId is required" });
   }
-  const config = useRuntimeConfig(event);
   const backendBase = (config.server as any).backHost?.replace(/\/$/, "") || "";
   if (!backendBase) {
     console.error("[proxy] /pages/nav missing backend host", {
