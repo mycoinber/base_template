@@ -5,11 +5,21 @@ if (!envSiteId) {
   throw new Error("SITE_ID environment variable is required for sitemap/robots generation");
 }
 
+const envBackendBase = (
+  process.env.BACKEND_URL ||
+  process.env.BACK_HOST ||
+  process.env.BACK_HOST_SV ||
+  ""
+)
+  .trim()
+  .replace(/\/+$/, "");
+
 const envSitemapBase =
-  process.env.SITEMAP_API_BASE || "https://api.pbnmaster.online";
+  process.env.SITEMAP_API_BASE || envBackendBase || "https://api.pbnmaster.online";
 const SITE_ORIGIN_PLACEHOLDER = "{{SITE_ORIGIN}}";
 
 export const SITE_ID = envSiteId;
+export const BACKEND_BASE_URL = envBackendBase;
 export const SITEMAP_API_BASE = envSitemapBase;
 
 export interface RemoteSitemapImage {
@@ -29,7 +39,7 @@ export interface RemoteSitemapPayload {
   urls: RemoteSitemapEntry[];
 }
 
-const endpointBase = SITEMAP_API_BASE.replace(/\/$/, "");
+const endpointBase = SITEMAP_API_BASE.replace(/\/+$/, "");
 
 export const fetchRemoteSitemap = async (): Promise<RemoteSitemapPayload | null> => {
   const endpoint = `${endpointBase}/sites/sitemap?siteId=${SITE_ID}`;

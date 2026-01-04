@@ -17,7 +17,7 @@ const manifestUrl = resolveManifestUrl();
 const storageBase = (process.env.MEDIA_STORAGE_URL || '').trim().replace(/\/$/, '');
 
 if (!manifestUrl) {
-  console.error('[fetch-manifest] MANIFEST_URL or SITE_ID/BACK_HOST must be provided');
+  console.error('[fetch-manifest] MANIFEST_URL or SITE_ID/BACKEND_URL must be provided');
   process.exit(1);
 }
 
@@ -79,12 +79,17 @@ function resolveManifestUrl() {
     return explicit;
   }
 
-  const backHost = (process.env.BACK_HOST || process.env.BACK_HOST_SV || '').trim();
+  const backHost = (
+    process.env.BACKEND_URL ||
+    process.env.BACK_HOST ||
+    process.env.BACK_HOST_SV ||
+    ''
+  ).trim();
   if (!siteId || !backHost) {
     return null;
   }
 
-  const normalizedHost = backHost.replace(/\/$/, '');
+  const normalizedHost = backHost.replace(/\/+$/, '');
   return `${normalizedHost}/pages/${siteId}/manifest`;
 }
 

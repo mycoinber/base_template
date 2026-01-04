@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
   if (!backendBase) {
     throw createError({
       statusCode: 500,
-      statusMessage: "BACK_HOST is not configured",
+      statusMessage: "BACKEND_URL is not configured",
     });
   }
 

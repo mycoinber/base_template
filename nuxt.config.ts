@@ -1,6 +1,10 @@
 import { readFileSync } from "fs";
 import { resolve } from "path";
-import { SITE_ID, SITEMAP_API_BASE } from "./utils/remote-sitemap";
+import {
+  SITE_ID,
+  SITEMAP_API_BASE,
+  BACKEND_BASE_URL,
+} from "./utils/remote-sitemap";
 
 export default defineNuxtConfig({
   devtools: { enabled: false },
@@ -90,10 +94,11 @@ export default defineNuxtConfig({
       ) as any,
       mediaStorageUrl: process.env.MEDIA_STORAGE_URL,
       sitemapApiBase: SITEMAP_API_BASE,
+      backHost: BACKEND_BASE_URL || undefined,
     },
     server: {
       siteId: SITE_ID,
-      backHost: process.env.BACK_HOST_SV,
+      backHost: BACKEND_BASE_URL || undefined,
       globalHead: JSON.parse(
         readFileSync(resolve("site.json"), "utf-8")
       ) as any,
@@ -114,7 +119,7 @@ export default defineNuxtConfig({
       },
     },
     alias: {
-      unsplash: process.env.BACK_HOST || "http://localhost:3077",
+      unsplash: BACKEND_BASE_URL || "http://localhost:3077",
     },
     screens: {
       xs: 320,
