@@ -1,7 +1,7 @@
 // server/middleware/block-bad-bots.global.ts
 export default defineEventHandler((event) => {
   const ua = (getHeader(event, "user-agent") || "").toString();
-  // console.log("[block-bad-bots] path=", event.path, "ua=", ua);
+  console.log("[block-bad-bots] path=", event.path, "ua=", ua);
   // (необязательно) оставим "белый список" системных ботов/превью,
   // чтобы не ломать шаринг/проверки статуса и т.п.
   if (!ua) return;
