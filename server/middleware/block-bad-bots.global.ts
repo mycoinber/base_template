@@ -2,6 +2,7 @@
 export default defineEventHandler((event) => {
   const ua = (getHeader(event, "user-agent") || "").toString();
   console.log("[block-bad-bots] path=", event.path, "ua=", ua);
+  console.log("[block-bad-bots] event=", event);
   // (необязательно) оставим "белый список" системных ботов/превью,
   // чтобы не ломать шаринг/проверки статуса и т.п.
   if (!ua) return;
