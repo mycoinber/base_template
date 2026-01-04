@@ -2,7 +2,25 @@
 export default defineEventHandler((event) => {
   const ua = (getHeader(event, "user-agent") || "").toString();
   console.log("[block-bad-bots] path=", event.path, "ua=", ua);
-  console.log("[block-bad-bots] event=", event);
+  const url = getRequestURL(event);
+
+  console.log(
+    "[block-bad-bots]",
+    "req.url=",
+    event.node.req.url,
+    "href=",
+    url.href,
+    "search=",
+    url.search,
+    "query=",
+    getQuery(event),
+    "x-vercel-id=",
+    getHeader(event, "x-vercel-id"),
+    "x-forwarded-uri=",
+    getHeader(event, "x-forwarded-uri"),
+    "ua=",
+    ua
+  );
   // (необязательно) оставим "белый список" системных ботов/превью,
   // чтобы не ломать шаринг/проверки статуса и т.п.
   if (!ua) return;
