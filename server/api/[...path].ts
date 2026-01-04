@@ -18,6 +18,18 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  const query = getQuery(event); // { slug: 'grey-eagle-online-casino-in-canada' }
+  const slug = String(query.slug || "");
+
+  // params из пути (если роут с параметрами)
+  // но в твоём случае у тебя wildcard /api/**:path, поэтому:
+  const path = event.context.params?.path; // "pages/6952ddd87f09a9449cf24f3f"
+
+  console.log("[debug] url=", event.node.req.url);
+  console.log("[debug] path=", path);
+  console.log("[debug] query=", query);
+  console.log("[debug] slug=", slug);
+
   const rawRequestUrl = event.node?.req?.url || "/";
   const upstreamPath =
     rawRequestUrl.split("?")[0]?.replace(/^\/api/, "") || "/";
