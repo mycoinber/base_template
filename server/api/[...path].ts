@@ -1,7 +1,6 @@
 import {
   defineEventHandler,
   createError,
-  getRequestURL,
   proxyRequest,
   getProxyRequestHeaders,
 } from "h3";
@@ -26,18 +25,24 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const requestURL = getRequestURL(event);
-  console.log("[...] path=", requestURL);
-  const existingSiteId = requestURL.searchParams.get("siteId")?.trim();
+  const rawRequestUrl = event.node?.req?.url || "/";
+  const queryIndex = rawRequestUrl.indexOf("?");
+  const rawPath =
+    queryIndex === -1 ? rawRequestUrl : rawRequestUrl.slice(0, queryIndex);
+  const rawQuery = queryIndex === -1 ? "" : rawRequestUrl.slice(queryIndex + 1);
+  const searchParams = new URLSearchParams(rawQuery);
+  const existingSiteId = searchParams.get("siteId")?.trim();
   if (resolvedSiteId && !existingSiteId) {
-    requestURL.searchParams.set("siteId", resolvedSiteId);
+    searchParams.set("siteId", resolvedSiteId);
   }
-  const upstreamPath = requestURL.pathname.replace(/^\/api/, "") || "/";
+  const upstreamPath = rawPath.replace(/^\/api/, "") || "/";
   const targetURL = new URL(
     joinURL(backendBase.replace(/\/$/, ""), upstreamPath)
   );
-  targetURL.search = requestURL.search;
+  const queryString = searchParams.toString();
+  targetURL.search = queryString ? `?${queryString}` : "";
 
+  console.log("[...] path=", targetURL.toString());
   return proxyRequest(event, targetURL.toString(), {
     fetchOptions: {
       headers: getProxyRequestHeaders(event, {
