@@ -7,6 +7,7 @@ import {
 import { joinURL } from "ufo";
 
 export default defineEventHandler(async (event) => {
+  console.log("[...] event=", event);
   const runtimeConfig = useRuntimeConfig(event);
   const backendBase =
     runtimeConfig.server?.backHost || runtimeConfig.public?.backHost;
@@ -36,6 +37,7 @@ export default defineEventHandler(async (event) => {
     searchParams.set("siteId", resolvedSiteId);
   }
   const upstreamPath = rawPath.replace(/^\/api/, "") || "/";
+  console.log("[...] upstreamPath=", upstreamPath);
   const targetURL = new URL(
     joinURL(backendBase.replace(/\/$/, ""), upstreamPath)
   );
