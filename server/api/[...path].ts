@@ -27,6 +27,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const requestURL = getRequestURL(event);
+  console.log("[...] path=", requestURL);
   const existingSiteId = requestURL.searchParams.get("siteId")?.trim();
   if (resolvedSiteId && !existingSiteId) {
     requestURL.searchParams.set("siteId", resolvedSiteId);
