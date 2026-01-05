@@ -59,7 +59,7 @@ export default defineNuxtConfig({
   nitro: {
     logLevel: "debug",
     node: true,
-    preset: "cloudflare-pages",
+    preset: "cloudflare_pages",
     cloudflare: {
       deployConfig: true,
       nodeCompat: true,
