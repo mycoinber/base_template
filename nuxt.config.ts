@@ -60,6 +60,10 @@ export default defineNuxtConfig({
     logLevel: "debug",
     node: true,
     preset: "cloudflare-pages",
+    cloudflare: {
+      deployConfig: true,
+      nodeCompat: true,
+    },
     prerender: {
       // crawlLinks: true,
       ignore: ["/yandex-browser-manifest.json"],
