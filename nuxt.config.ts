@@ -59,7 +59,6 @@ export default defineNuxtConfig({
   nitro: {
     logLevel: "debug",
     node: true,
-    preset: "cloudflare-pages",
     prerender: {
       // crawlLinks: true,
       ignore: ["/yandex-browser-manifest.json"],
