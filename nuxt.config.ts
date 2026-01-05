@@ -1,10 +1,13 @@
-// import {
-//   SITE_ID,
-//   SITEMAP_API_BASE,
-//   BACKEND_BASE_URL,
-// } from "./utils/remote-sitemap";
-
-console.log("process.env", process.env);
+const SITE_ID = (process.env.SITE_ID || '').trim();
+const BACKEND_BASE_URL = (process.env.BACKEND_URL
+  || process.env.BACK_HOST
+  || process.env.BACK_HOST_SV
+  || '')
+  .trim()
+  .replace(/\/+$, '');
+const SITEMAP_API_BASE = process.env.SITEMAP_API_BASE
+  || BACKEND_BASE_URL
+  || 'https://api.pbnmaster.online';
 
 export default defineNuxtConfig({
   devtools: { enabled: false },
