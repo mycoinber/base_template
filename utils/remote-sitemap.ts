@@ -1,5 +1,4 @@
 import type { H3Event } from "h3";
-console.log("process.env", process.env);
 
 const envSiteId = process.env.SITE_ID;
 if (!envSiteId) {

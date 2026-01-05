@@ -4,6 +4,8 @@ import {
   BACKEND_BASE_URL,
 } from "./utils/remote-sitemap";
 
+console.log("process.env", process.env);
+
 export default defineNuxtConfig({
   devtools: { enabled: false },
   ssr: true,
