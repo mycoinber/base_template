@@ -1,5 +1,3 @@
-import { readFileSync } from "fs";
-import { resolve } from "path";
 import {
   SITE_ID,
   SITEMAP_API_BASE,
@@ -94,9 +92,6 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       siteId: SITE_ID,
-      globalHead: JSON.parse(
-        readFileSync(resolve("site.json"), "utf-8")
-      ) as any,
       mediaStorageUrl: process.env.MEDIA_STORAGE_URL,
       sitemapApiBase: SITEMAP_API_BASE,
       backHost: BACKEND_BASE_URL || undefined,
@@ -104,9 +99,6 @@ export default defineNuxtConfig({
     server: {
       siteId: SITE_ID,
       backHost: BACKEND_BASE_URL || undefined,
-      globalHead: JSON.parse(
-        readFileSync(resolve("site.json"), "utf-8")
-      ) as any,
       mediaStorageUrl: process.env.MEDIA_STORAGE_URL,
       sitemapApiBase: SITEMAP_API_BASE,
     },
