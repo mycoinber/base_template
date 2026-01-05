@@ -81,9 +81,6 @@ export default defineNuxtConfig({
       },
     },
     server: {
-      fs: {
-        allow: ["../pbn/*", "./"],
-      },
       watch: {
         usePolling: true,
       },
