@@ -1,8 +1,8 @@
-import {
-  SITE_ID,
-  SITEMAP_API_BASE,
-  BACKEND_BASE_URL,
-} from "./utils/remote-sitemap";
+// import {
+//   SITE_ID,
+//   SITEMAP_API_BASE,
+//   BACKEND_BASE_URL,
+// } from "./utils/remote-sitemap";
 
 console.log("process.env", process.env);
 
