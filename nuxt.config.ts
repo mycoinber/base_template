@@ -1,13 +1,20 @@
-const SITE_ID = (process.env.SITE_ID || '').trim();
-const BACKEND_BASE_URL = (process.env.BACKEND_URL
-  || process.env.BACK_HOST
-  || process.env.BACK_HOST_SV
-  || '')
-  .trim()
-  .replace(/\/+$, '');
-const SITEMAP_API_BASE = process.env.SITEMAP_API_BASE
-  || BACKEND_BASE_URL
-  || 'https://api.pbnmaster.online';
+const DEFAULT_SITEMAP_API_BASE = "https://api.pbnmaster.online";
+
+const normalizeBaseUrl = (value?: string | null) => {
+  if (!value) {
+    return "";
+  }
+  return value.trim().replace(/\/+$/, "");
+};
+
+const SITE_ID = (process.env.SITE_ID || "").trim();
+const MEDIA_STORAGE_URL = (process.env.MEDIA_STORAGE_URL || "").trim();
+const BACKEND_BASE_URL = normalizeBaseUrl(process.env.BACKEND_URL);
+const SITEMAP_API_BASE =
+  normalizeBaseUrl(process.env.SITEMAP_API_BASE) ||
+  BACKEND_BASE_URL ||
+  DEFAULT_SITEMAP_API_BASE;
+const CSS_SLUG = (process.env.SLUG || "site").trim() || "site";
 
 export default defineNuxtConfig({
   devtools: { enabled: false },
@@ -75,7 +82,7 @@ export default defineNuxtConfig({
   vite: {
     css: {
       modules: {
-        generateScopedName: `[local]-${process.env.SLUG}_[hash:base64:5]`,
+        generateScopedName: `[local]-${CSS_SLUG}_[hash:base64:5]`,
       },
       preprocessorOptions: {
         scss: {
@@ -94,14 +101,14 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       siteId: SITE_ID,
-      mediaStorageUrl: process.env.MEDIA_STORAGE_URL,
+      mediaStorageUrl: MEDIA_STORAGE_URL || undefined,
       sitemapApiBase: SITEMAP_API_BASE,
       backHost: BACKEND_BASE_URL || undefined,
     },
     server: {
       siteId: SITE_ID,
       backHost: BACKEND_BASE_URL || undefined,
-      mediaStorageUrl: process.env.MEDIA_STORAGE_URL,
+      mediaStorageUrl: MEDIA_STORAGE_URL || undefined,
       sitemapApiBase: SITEMAP_API_BASE,
     },
   },

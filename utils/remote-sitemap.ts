@@ -1,4 +1,5 @@
 import type { H3Event } from "h3";
+import { useRuntimeConfig } from "#imports";
 
 const SITE_ORIGIN_PLACEHOLDER = "{{SITE_ORIGIN}}";
 
@@ -34,15 +35,13 @@ export interface RemoteSitemapHandlers {
 }
 
 export const createRemoteSitemapHandlers = (
-  config: RemoteSitemapConfig,
+  config?: RemoteSitemapConfig,
 ): RemoteSitemapHandlers => {
-  const siteId = (config.siteId || '').trim();
-  const backendBase = sanitizeBaseUrl(config.backendBaseUrl);
-  const sitemapBase = sanitizeBaseUrl(config.sitemapApiBase)
-    || backendBase
-    || 'https://api.pbnmaster.online';
-  const endpointBase = sitemapBase.replace(/\/+$/, '');
+  const resolved = resolveRemoteSitemapConfig(config);
+  const siteId = resolved.siteId;
+  const endpointBase = resolved.sitemapApiBase || resolved.backendBaseUrl;
   let missingSiteIdLogged = false;
+  let missingEndpointLogged = false;
 
   const warnMissingSiteId = () => {
     if (missingSiteIdLogged) return;
@@ -50,9 +49,19 @@ export const createRemoteSitemapHandlers = (
     console.warn('[remote-sitemap] SITE_ID is not configured. Skipping remote sitemap generation.');
   };
 
+  const warnMissingEndpoint = () => {
+    if (missingEndpointLogged) return;
+    missingEndpointLogged = true;
+    console.warn('[remote-sitemap] SITEMAP_API_BASE/BACK_HOST is not configured. Skipping remote sitemap generation.');
+  };
+
   const fetchRemoteSitemap = async (): Promise<RemoteSitemapPayload | null> => {
     if (!siteId) {
       warnMissingSiteId();
+      return null;
+    }
+    if (!endpointBase) {
+      warnMissingEndpoint();
       return null;
     }
     const endpoint = `${endpointBase}/sites/sitemap?siteId=${siteId}`;
@@ -160,6 +169,37 @@ const sanitizeBaseUrl = (value?: string | null) => {
     trimmed = trimmed.slice(0, -1);
   }
   return trimmed;
+};
+
+const resolveRemoteSitemapConfig = (config?: RemoteSitemapConfig) => {
+  const runtimeConfig = getRuntimeConfigSnapshot();
+  const siteId = (config?.siteId
+    ?? runtimeConfig.siteId
+    ?? '').trim();
+  const backendBaseUrl = sanitizeBaseUrl(
+    config?.backendBaseUrl ?? runtimeConfig.backendBaseUrl,
+  );
+  const sitemapApiBase = sanitizeBaseUrl(
+    config?.sitemapApiBase ?? runtimeConfig.sitemapApiBase,
+  );
+
+  return { siteId, backendBaseUrl, sitemapApiBase };
+};
+
+const getRuntimeConfigSnapshot = (): Required<RemoteSitemapConfig> => {
+  try {
+    const runtime = useRuntimeConfig();
+    const server = (runtime as any)?.server || {};
+    const publicConfig = (runtime as any)?.public || {};
+    return {
+      siteId: server.siteId || publicConfig.siteId || '',
+      backendBaseUrl: server.backHost || publicConfig.backHost || '',
+      sitemapApiBase: server.sitemapApiBase || publicConfig.sitemapApiBase || '',
+    };
+  } catch (error) {
+    console.warn('[remote-sitemap] Failed to read runtime config', error);
+    return { siteId: '', backendBaseUrl: '', sitemapApiBase: '' };
+  }
 };
 
 const pickHeaderValue = (value?: string | string[]) => {

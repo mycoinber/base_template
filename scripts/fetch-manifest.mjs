@@ -12,14 +12,9 @@ const publicDir = join(projectRoot, 'public');
 
 loadEnvFile(join(projectRoot, '.env'));
 
-const siteId = (process.env.SITE_ID || '').trim();
-const manifestUrl = resolveManifestUrl();
-const storageBase = (process.env.MEDIA_STORAGE_URL || '').trim().replace(/\/$/, '');
-
-if (!manifestUrl) {
-  console.error('[fetch-manifest] MANIFEST_URL or SITE_ID/BACKEND_URL must be provided');
-  process.exit(1);
-}
+const env = resolveTemplateEnv();
+const manifestUrl = `${env.backendBaseUrl}/pages/${env.siteId}/manifest`;
+const storageBase = env.mediaStorageUrl;
 
 console.log(`[fetch-manifest] Fetching manifest from ${manifestUrl}`);
 
@@ -73,24 +68,31 @@ successCount += additionalCount;
 
 console.log(`[fetch-manifest] Downloaded ${successCount} asset(s) to ${publicDir}`);
 
-function resolveManifestUrl() {
-  const explicit = (process.env.MANIFEST_URL || '').trim();
-  if (explicit) {
-    return explicit;
+function resolveTemplateEnv() {
+  const readEnv = (key) => (process.env[key] || '').trim();
+  const normalizeBaseUrl = (value) => value.replace(/\/+$/, '');
+
+  const siteId = readEnv('SITE_ID');
+  if (!siteId) {
+    console.error('[fetch-manifest] SITE_ID is required');
+    process.exit(1);
   }
 
-  const backHost = (
-    process.env.BACKEND_URL ||
-    process.env.BACK_HOST ||
-    process.env.BACK_HOST_SV ||
-    ''
-  ).trim();
-  if (!siteId || !backHost) {
-    return null;
+  const backendBaseUrlRaw = readEnv('BACKEND_URL');
+  if (!backendBaseUrlRaw) {
+    console.error('[fetch-manifest] BACKEND_URL is required');
+    process.exit(1);
   }
 
-  const normalizedHost = backHost.replace(/\/+$/, '');
-  return `${normalizedHost}/pages/${siteId}/manifest`;
+  const backendBaseUrl = normalizeBaseUrl(backendBaseUrlRaw);
+  const mediaStorageUrlRaw = readEnv('MEDIA_STORAGE_URL');
+  const mediaStorageUrl = mediaStorageUrlRaw ? normalizeBaseUrl(mediaStorageUrlRaw) : '';
+
+  return {
+    siteId,
+    backendBaseUrl,
+    mediaStorageUrl,
+  };
 }
 
 function collectAssetsFromManifest(manifestPayload, storageBaseUrl) {
