@@ -18,7 +18,19 @@ const introBlock = computed(() =>
   ) || null,
 );
 
+const heroOffer = computed(() => {
+  const offers = Array.isArray(props.data?.offers) ? props.data.offers : [];
+  return offers.find((entry) => entry?.placement === 'hero') || null;
+});
+
 const heroMedia = computed(() => {
+  const offerMedia = heroOffer.value?.data?.imageMedia || heroOffer.value?.data?.image;
+  if (offerMedia && typeof offerMedia === 'object' && offerMedia.path) {
+    return offerMedia;
+  }
+  if (typeof offerMedia === 'string' && offerMedia) {
+    return { path: offerMedia, alt: heroOffer.value?.data?.title || heroOffer.value?.data?.label || 'hero' };
+  }
   const intro = introBlock.value || null;
   if (intro) {
     if (Array.isArray(intro.imageUrl) && intro.imageUrl.length && intro.imageUrl[0]?.path) {
@@ -36,6 +48,8 @@ const heroMedia = computed(() => {
 });
 
 const heroAlt = computed(() => {
+  if (heroOffer.value?.data?.title) return heroOffer.value.data.title;
+  if (heroOffer.value?.data?.label) return heroOffer.value.data.label;
   if (heroMedia.value?.alt) return heroMedia.value.alt;
   if (introBlock.value?.headline) return introBlock.value.headline;
   return props.data?.article?.H1 || 'hero';
@@ -77,7 +91,13 @@ if (import.meta.server) {
   </div>
 
   <section
-    v-if="heroMedia"
+    v-if="heroOffer"
+    class="relative w-full mb-8 overflow-hidden rounded-[0.625rem] border border-border"
+  >
+    <AdsHero :offer="heroOffer" />
+  </section>
+  <section
+    v-else-if="heroMedia"
     class="relative w-full mb-8 overflow-hidden rounded-[0.625rem] border border-border"
   >
     <NuxtImg
