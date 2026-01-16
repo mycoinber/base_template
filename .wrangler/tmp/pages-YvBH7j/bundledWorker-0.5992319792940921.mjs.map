@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "sources": ["../../../dist/_worker.js/index.js"],
+  "sourceRoot": "/Users/passionfruit/Documents/Projects/base_template/.wrangler/tmp/pages-YvBH7j/bundledWorker-0.5992319792940921.mjs",
+  "sourcesContent": ["globalThis._importMeta_={url:\"file:///_entry.js\",env:{}};import\"node:buffer\";export{bz as default}from\"./chunks/nitro/nitro.mjs\";import\"node:net\";import\"node:stream\";import\"node:events\";import\"node:process\";import\"cloudflare:workers\";import\"node:timers\";\n//# sourceMappingURL=index.js.map\n"],
+  "mappings": ";AAAyD,OAAM;AAAc,SAAa,UAAY;AAA2B,OAAM;AAAW,OAAM;AAAc,OAAM;AAAc,OAAM;AAAe,OAAM;AAAqB,OAAM;AAAhP,WAAW,eAAa,EAAC,KAAI,qBAAoB,KAAI,CAAC,EAAC;",
+  "names": []
+}
