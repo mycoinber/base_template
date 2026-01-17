@@ -67,6 +67,10 @@ const resolvedLogo = computed(() => {
   return null
 })
 
+const siteTitle = computed(() => {
+  return props.data?.siteName || props.data?.name || props.data?.head?.title || 'site'
+})
+
 const headerOffer = computed(() => {
   const offers = Array.isArray(props.data?.offers) ? props.data.offers : []
   const hero = offers.find((entry) => entry?.placement === 'hero')?.data || null
@@ -103,7 +107,7 @@ const headerSecondaryLabel = computed(() => {
             <NuxtImg
               v-if="resolvedLogo"
               :src="resolvedLogo?.path || ''"
-              :alt="resolvedLogo?.alt || 'logo'"
+              :alt="siteTitle"
               class="w-full h-full object-contain"
             />
           </NuxtLink>

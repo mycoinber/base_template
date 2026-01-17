@@ -47,6 +47,10 @@ const resolvedLogo = computed(() => {
   }
   return null;
 });
+
+const siteTitle = computed(() => {
+  return props.data?.siteName || props.data?.name || props.data?.head?.title || 'site';
+});
 </script>
 
 <template>
@@ -59,7 +63,7 @@ const resolvedLogo = computed(() => {
               <NuxtImg
                 v-if="resolvedLogo"
                 :src="resolvedLogo?.path || ''"
-                :alt="resolvedLogo?.alt || 'logo'"
+                :alt="siteTitle"
                 class="w-full h-full object-contain"
               />
             </NuxtLink>
