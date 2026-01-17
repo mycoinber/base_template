@@ -8,6 +8,9 @@ const props = defineProps({
   },
 });
 
+const config = useRuntimeConfig();
+const requestUrl = useRequestURL();
+
 const blocks = computed(() =>
   Array.isArray(props.data.article?.blocks) ? props.data.article.blocks : [],
 );
@@ -55,6 +58,32 @@ const heroAlt = computed(() => {
   return props.data?.article?.H1 || 'hero';
 });
 
+const normalizeSiteUrl = (value) => {
+  if (!value) return '';
+  return String(value).trim().replace(/\/+$/, '');
+};
+
+const baseUrl = computed(() => {
+  const fromConfig = normalizeSiteUrl(config.public?.siteUrl);
+  if (fromConfig) return fromConfig;
+  return normalizeSiteUrl(`${requestUrl.protocol}//${requestUrl.host}`);
+});
+
+const toAbsoluteUrl = (value) => {
+  if (!value) return '';
+  const raw = String(value).trim();
+  if (!raw) return '';
+  if (/^https?:\/\//i.test(raw) || raw.startsWith('data:')) return raw;
+  try {
+    const normalizedBase = baseUrl.value?.endsWith('/') ? baseUrl.value : `${baseUrl.value}/`;
+    return new URL(raw, normalizedBase).toString();
+  } catch {
+    return raw;
+  }
+};
+
+const heroMediaSrc = computed(() => toAbsoluteUrl(heroMedia.value?.path));
+
 const sectionComponents = {
   intro: defineAsyncComponent(() => import('./sections/Intro.vue')),
   h2: defineAsyncComponent(() => import('./sections/Heading.vue')),
@@ -98,14 +127,16 @@ if (import.meta.server) {
   </section>
   <section
     v-else-if="heroMedia"
-    class="relative w-full mb-8 overflow-hidden rounded-[0.625rem] border border-border"
+    class="relative w-full mb-8 overflow-hidden rounded-[0.625rem] border border-border min-h-[20rem] max-[541px]:min-h-[14rem]"
   >
     <NuxtImg
-      :src="heroMedia?.path || ''"
+      :src="heroMediaSrc"
       :alt="heroAlt"
-      class="w-full h-full object-cover"
+      sizes="100vw"
+      class="absolute inset-0 w-full h-full object-cover"
       loading="lazy"
     />
+    <div class="absolute inset-x-0 bottom-0 h-[60%] bg-gradient-to-b from-transparent via-black/50 to-background-01 pointer-events-none"></div>
   </section>
 
   <MainTitle v-if="data.article?.H1" :data="data" />

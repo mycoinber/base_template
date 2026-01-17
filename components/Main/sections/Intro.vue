@@ -32,7 +32,7 @@ const heroImage = computed(() => heroImages.value[0] || null);
 <template>
   <section
     :id="block._id"
-    class="relative z-[2] mb-16 max-[541px]:min-h-[120vh] max-[541px]:h-fit"
+    class="relative z-[2] mb-16 max-[541px]:h-fit"
     :class="{ 'w-full h-[65rem]': page.offer }"
   >
     <div class="container">
@@ -50,7 +50,8 @@ const heroImage = computed(() => heroImages.value[0] || null);
           v-if="heroImage?.path"
           :src="heroImage.path"
           :alt="heroImage?.alt || 'hero'"
-          class="w-full h-full object-cover max-[541px]:object-contain max-[541px]:object-top"
+          sizes="100vw"
+          class="w-full h-full object-cover max-[541px]:object-cover max-[541px]:object-top"
         />
       </div>
     </div>

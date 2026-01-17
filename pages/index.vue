@@ -35,6 +35,31 @@ const pageHead = computed(() => data.value?.head || {});
 const pageLang = computed(() => data.value?.lang || "en");
 const pageDomain = computed(() => data.value?.domain || siteDomain);
 const pageSlug = computed(() => data.value?.slug || "");
+const pageUrl = computed(() => `${pageDomain.value}/${pageSlug.value}`.replace(/\/+$/, "/"));
+
+const normalizeSiteUrl = (value) => {
+  if (!value) return "";
+  return String(value).trim().replace(/\/+$/, "");
+};
+
+const isLocalhostUrl = (value) => /localhost|127\.0\.0\.1|0\.0\.0\.0/i.test(value || "");
+
+const schemaBaseUrl = computed(() => {
+  const fromConfig = normalizeSiteUrl(config.public?.siteUrl || config.server?.siteUrl);
+  if (fromConfig) return fromConfig;
+  const fallback = normalizeSiteUrl(pageDomain.value);
+  if (process.env.NODE_ENV === "production" && isLocalhostUrl(fallback)) {
+    return "";
+  }
+  return fallback;
+});
+
+const schemaPageUrl = computed(() => {
+  const base = schemaBaseUrl.value;
+  if (!base) return "";
+  const slugValue = String(pageSlug.value || "").replace(/^\/+/, "");
+  return slugValue ? `${base}/${slugValue}/` : `${base}/`;
+});
 
 const globalHeadRaw = import.meta.server ? config.server.globalHead : config.public.globalHead;
 const globalHeadSource = Array.isArray(globalHeadRaw) ? globalHeadRaw : [];
@@ -47,20 +72,338 @@ const globalHead = {
     .map(tag => Object.fromEntries(Array.from(tag.matchAll(/(\w+)=["'](.*?)["']/g)).map(([_, name, value]) => [name, value]))),
 };
 
+const toAbsoluteUrl = (value, base) => {
+  if (!value) return undefined;
+  const raw = String(value).trim();
+  if (!raw) return undefined;
+  if (/^https?:\/\//i.test(raw) || raw.startsWith("data:")) return raw;
+  try {
+    const normalizedBase = base?.endsWith("/") ? base : `${base}/`;
+    return new URL(raw, normalizedBase).toString();
+  } catch {
+    return raw;
+  }
+};
+
+const normalizeDimension = (value) => {
+  if (value == null) return undefined;
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) return undefined;
+  return String(Math.round(num));
+};
+
+const toIsoDate = (value) => {
+  if (!value) return undefined;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toISOString();
+};
+
+const stripHtml = (value) => {
+  if (!value) return "";
+  return String(value).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+};
+
+const humanizeSegment = (value) => {
+  if (!value) return "";
+  const text = String(value)
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!text) return "";
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
+
+const ogImage = computed(() => {
+  const image = data.value?.article?.introImage?.[0];
+  const src = image?.path || image?.url || image?.src;
+  return toAbsoluteUrl(src, pageDomain.value);
+});
+const ogImageWidth = computed(() => {
+  const image = data.value?.article?.introImage?.[0];
+  return normalizeDimension(image?.width ?? image?.w);
+});
+const ogImageHeight = computed(() => {
+  const image = data.value?.article?.introImage?.[0];
+  return normalizeDimension(image?.height ?? image?.h);
+});
+const siteName = computed(() => {
+  const fromConfig = config.public?.siteName || config.server?.siteName;
+  const fromData = data.value?.siteName || data.value?.site?.name || data.value?.name;
+  const fallback = pageDomain.value ? pageDomain.value.replace(/^https?:\/\//, "") : "";
+  const value = fromData || fromConfig || fallback;
+  return value ? String(value) : undefined;
+});
+const publishedTime = computed(() =>
+  toIsoDate(
+    data.value?.article?.createdAt ||
+      data.value?.createdAt ||
+      data.value?.publishedAt ||
+      pageHead.value?.publishedAt,
+  )
+);
+const modifiedTime = computed(() =>
+  toIsoDate(
+    data.value?.article?.updatedAt ||
+      data.value?.updatedAt ||
+      data.value?.modifiedAt ||
+      pageHead.value?.modifiedAt,
+  )
+);
+const twitterSite = computed(() => {
+  const fromConfig = config.public?.twitterSite || config.server?.twitterSite;
+  const fromData = data.value?.twitterSite || pageHead.value?.twitterSite;
+  return fromData || fromConfig || undefined;
+});
+
+const schemaBreadcrumbs = computed(() => {
+  if (!schemaBaseUrl.value) return [];
+  const items = [];
+  const homeName = siteName.value || "Home";
+  const homeUrl = schemaBaseUrl.value;
+  if (homeUrl) {
+    items.push({ name: homeName, item: homeUrl });
+  }
+  if (pageSlug.value) {
+    const segments = String(pageSlug.value).split("/").filter(Boolean);
+    let path = "";
+    segments.forEach((segment, index) => {
+      path += `${segment}/`;
+      const isLast = index === segments.length - 1;
+      items.push({
+        name: isLast ? (pageHead.value.title || humanizeSegment(segment)) : humanizeSegment(segment),
+        item: `${schemaBaseUrl.value}/${path}`,
+      });
+    });
+  }
+  return items.map((item, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: item.name,
+    item: item.item,
+  }));
+});
+
+const schemaFaq = computed(() => {
+  const blocks = Array.isArray(data.value?.article?.blocks) ? data.value.article.blocks : [];
+  const faqs = [];
+  for (const block of blocks) {
+    const blockFaqs = Array.isArray(block?.faqs) ? block.faqs : [];
+    for (const faq of blockFaqs) {
+      const question = stripHtml(faq?.question);
+      const answer = stripHtml(faq?.answer);
+      if (question && answer) {
+        faqs.push({
+          "@type": "Question",
+          name: question,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: answer,
+          },
+        });
+      }
+    }
+  }
+  return faqs;
+});
+
+const schemaAuthor = computed(() => {
+  const author = data.value?.aiauthor;
+  if (!author) return null;
+  const nameCandidate = author?.name;
+  const first = nameCandidate?.first || "";
+  const last = nameCandidate?.last || "";
+  const fullName = [first, last].filter(Boolean).join(" ").trim() || nameCandidate?.full || nameCandidate?.value || "";
+  const name = String(fullName || author?.name || author?.fullName || "").trim();
+  if (!name) return null;
+  const imageCandidate = Array.isArray(author?.picture) ? author.picture[0]?.path : author?.picture?.path;
+  const imageUrl = toAbsoluteUrl(imageCandidate, schemaBaseUrl.value || pageDomain.value);
+  const description = stripHtml(author?.bio);
+  const authorId = schemaPageUrl.value ? `${schemaPageUrl.value}#author` : undefined;
+  const node = {
+    "@type": "Person",
+    name,
+    image: imageUrl ? [imageUrl] : undefined,
+    description: description || undefined,
+  };
+  if (authorId) {
+    node["@id"] = authorId;
+  }
+  return node;
+});
+
+const schemaReviews = computed(() => {
+  const blocks = Array.isArray(data.value?.article?.blocks) ? data.value.article.blocks : [];
+  const reviews = [];
+  for (const block of blocks) {
+    const blockReviews = Array.isArray(block?.reviews) ? block.reviews : [];
+    for (const review of blockReviews) {
+      const authorName = stripHtml(
+        review?.authorBio || review?.name || review?.author?.name || review?.author,
+      );
+      const ratingValue = Number(review?.rating);
+      if (!authorName || !Number.isFinite(ratingValue) || ratingValue <= 0) {
+        continue;
+      }
+      const body = stripHtml(review?.comment || review?.content);
+      const datePublished = toIsoDate(review?.date);
+      reviews.push({
+        "@type": "Review",
+        author: { "@type": "Person", name: authorName },
+        reviewRating: {
+          "@type": "Rating",
+          ratingValue,
+          bestRating: 5,
+          worstRating: 1,
+        },
+        reviewBody: body || undefined,
+        datePublished,
+      });
+    }
+  }
+  return reviews;
+});
+
+const schemaAggregateRating = computed(() => {
+  const ratings = schemaReviews.value
+    .map((review) => Number(review?.reviewRating?.ratingValue))
+    .filter((value) => Number.isFinite(value) && value > 0);
+  if (!ratings.length) return undefined;
+  const total = ratings.reduce((sum, value) => sum + value, 0);
+  const average = Number((total / ratings.length).toFixed(1));
+  return {
+    "@type": "AggregateRating",
+    ratingValue: average,
+    reviewCount: ratings.length,
+    bestRating: 5,
+    worstRating: 1,
+  };
+});
+
+const schemaNodes = computed(() => {
+  const nodes = [];
+  const isArticle = String(data.value?.type || "").toLowerCase() === "article";
+  const websiteId = schemaBaseUrl.value ? `${schemaBaseUrl.value}#website` : undefined;
+  const orgId = schemaBaseUrl.value ? `${schemaBaseUrl.value}#organization` : undefined;
+  const pageId = schemaPageUrl.value ? `${schemaPageUrl.value}#webpage` : undefined;
+  const articleId = isArticle && schemaPageUrl.value ? `${schemaPageUrl.value}#article` : undefined;
+  const siteNameValue = siteName.value;
+  const logoCandidate = data.value?.logo?.[0]?.path || data.value?.siteLogo?.[0]?.path;
+  const logoUrl = toAbsoluteUrl(logoCandidate, schemaBaseUrl.value || pageDomain.value);
+  const authorNode = schemaAuthor.value;
+
+  if (schemaBaseUrl.value && siteNameValue) {
+    nodes.push({
+      "@type": "WebSite",
+      "@id": websiteId,
+      url: schemaBaseUrl.value,
+      name: siteNameValue,
+      inLanguage: pageLang.value,
+    });
+  }
+
+  if (schemaBaseUrl.value && siteNameValue) {
+    nodes.push({
+      "@type": "Organization",
+      "@id": orgId,
+      url: schemaBaseUrl.value,
+      name: siteNameValue,
+      logo: logoUrl ? { "@type": "ImageObject", url: logoUrl } : undefined,
+    });
+  }
+
+  if (schemaPageUrl.value) {
+    const webPageNode = {
+      "@type": "WebPage",
+      "@id": pageId,
+      url: schemaPageUrl.value,
+      name: pageHead.value.title || siteNameValue || "Website",
+      description: pageHead.value.description || undefined,
+      isPartOf: websiteId ? { "@id": websiteId } : undefined,
+      inLanguage: pageLang.value,
+      author: !isArticle && authorNode
+        ? authorNode["@id"]
+          ? { "@id": authorNode["@id"] }
+          : { "@type": "Person", name: authorNode.name }
+        : undefined,
+      aggregateRating: !isArticle ? schemaAggregateRating.value : undefined,
+    };
+    nodes.push(webPageNode);
+  }
+
+  if (schemaBreadcrumbs.value.length) {
+    nodes.push({
+      "@type": "BreadcrumbList",
+      itemListElement: schemaBreadcrumbs.value,
+    });
+  }
+
+  const articleHeadline = pageHead.value.title || data.value?.article?.H1;
+  if (isArticle && articleHeadline) {
+    nodes.push({
+      "@type": "Article",
+      "@id": articleId,
+      headline: articleHeadline,
+      description: pageHead.value.description || undefined,
+      image: ogImage.value ? [toAbsoluteUrl(ogImage.value, schemaBaseUrl.value || pageDomain.value)] : undefined,
+      datePublished: publishedTime.value,
+      dateModified: modifiedTime.value,
+      inLanguage: pageLang.value,
+      mainEntityOfPage: pageId ? { "@id": pageId } : undefined,
+      publisher: orgId ? { "@id": orgId } : undefined,
+      author: authorNode
+        ? authorNode["@id"]
+          ? { "@id": authorNode["@id"] }
+          : { "@type": "Person", name: authorNode.name }
+        : undefined,
+      aggregateRating: isArticle ? schemaAggregateRating.value : undefined,
+    });
+  }
+
+  if (schemaFaq.value.length) {
+    nodes.push({
+      "@type": "FAQPage",
+      mainEntity: schemaFaq.value,
+    });
+  }
+
+  if (authorNode) {
+    nodes.push(authorNode);
+  }
+
+  if (schemaReviews.value.length) {
+    const reviewedId = isArticle ? articleId : pageId;
+    const updatedReviews = schemaReviews.value.map((review) =>
+      reviewedId
+        ? { ...review, itemReviewed: { "@id": reviewedId } }
+        : review,
+    );
+    nodes.push(...updatedReviews);
+  }
+
+  return nodes.filter(Boolean);
+});
+
 const headMeta = computed(() => {
   const baseMeta = [
     { name: "description", content: toContentString(pageHead.value.description) },
     { name: "keywords", content: toContentString(pageHead.value.keywords) },
     { property: "og:title", content: toContentString(pageHead.value.title) },
     { property: "og:description", content: toContentString(pageHead.value.description) },
-    { property: "og:image", content: toContentString(data.value?.article?.introImage?.[0]?.path) },
+    { property: "og:image", content: toContentString(ogImage.value) },
+    { property: "og:image:width", content: toContentString(ogImageWidth.value) },
+    { property: "og:image:height", content: toContentString(ogImageHeight.value) },
     { property: "og:url", content: toContentString(`${pageDomain.value}/${pageSlug.value}`) },
     { property: "og:type", content: "article" },
+    { property: "og:site_name", content: toContentString(siteName.value) },
     { property: "og:locale", content: toContentString(pageLang.value) },
+    { property: "article:published_time", content: toContentString(publishedTime.value) },
+    { property: "article:modified_time", content: toContentString(modifiedTime.value) },
     { name: "twitter:card", content: "summary_large_image" },
     { name: "twitter:title", content: toContentString(pageHead.value.title) },
     { name: "twitter:description", content: toContentString(pageHead.value.description) },
-    { name: "twitter:image", content: toContentString(data.value?.article?.introImage?.[0]?.path) },
+    { name: "twitter:image", content: toContentString(ogImage.value) },
+    { name: "twitter:site", content: toContentString(twitterSite.value) },
   ];
 
   const metaArray = Array.isArray(pageHead.value.meta) ? pageHead.value.meta : [];
@@ -200,6 +543,8 @@ useHead({
   script: headScripts.value,
   noscript: headNoScripts.value,
 });
+
+useSchemaOrg(schemaNodes);
 
 const extractCode = (html) => {
   if (!html) return "";

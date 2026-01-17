@@ -1,2 +1,0 @@
-import{h as o}from"./server.mjs";import"../nitro/nitro.mjs";import"node:buffer";import"node:net";import"node:stream";import"node:events";import"node:process";import"cloudflare:workers";import"node:timers";import"../virtual/_commonjsHelpers.mjs";import"node:util";import"node:path";import"node:url";import"node:fs/promises";import"node:crypto";import"node:assert";import"node:zlib";const r=o({cast:o=>"string"==typeof o?{url:o}:o,defaults:{"@type":"VirtualLocation"}});export{r as virtualLocationResolver};
-//# sourceMappingURL=index9-C4-hHyLw.mjs.map

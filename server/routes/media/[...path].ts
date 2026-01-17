@@ -1,4 +1,4 @@
-import { defineEventHandler, getRouterParam, setHeader, setResponseStatus, createError } from 'h3'
+import { defineEventHandler, getQuery, getRouterParam, setHeader, setResponseStatus, createError } from 'h3'
 
 const sanitizePath = (raw: string) => {
   return raw
@@ -23,8 +23,22 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Invalid media path' });
   }
 
-  const target = `${baseUrl.replace(/\/$/, '')}/${cleanParam}`;
-  const cacheKey = cleanParam.toLowerCase();
+  const query = getQuery(event);
+  const params = new URLSearchParams();
+  const keys = Object.keys(query).sort();
+  for (const key of keys) {
+    const value = query[key];
+    if (Array.isArray(value)) {
+      value.forEach((entry) => {
+        if (entry != null && entry !== '') params.append(key, String(entry));
+      });
+    } else if (value != null && value !== '') {
+      params.set(key, String(value));
+    }
+  }
+  const queryString = params.toString();
+  const target = `${baseUrl.replace(/\/$/, '')}/${cleanParam}${queryString ? `?${queryString}` : ''}`;
+  const cacheKey = `${cleanParam}${queryString ? `?${queryString}` : ''}`.toLowerCase();
   const storage = useStorage('cache:media');
 
   const cachedMeta = await storage.getItem<{ contentType: string }>(`${cacheKey}:meta`).catch(() => null);

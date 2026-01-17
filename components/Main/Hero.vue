@@ -42,11 +42,13 @@ const heroSections = computed(() => {
           <NuxtImg
             v-if="data.offer?.background?.[0]?.path"
             :src="data.offer.background[0].path"
+            sizes="(max-width: 541px) 100vw, 75vw"
             class="w-full h-full object-cover"
           />
           <NuxtImg
             v-else
             :src="data.hero[0]?.path || ''"
+            sizes="(max-width: 541px) 100vw, 75vw"
             class="w-full h-full object-cover"
           />
         </div>
@@ -68,9 +70,16 @@ const heroSections = computed(() => {
             v-if="section.images?.[0]?.path"
             :src="section.images[0].path"
             :alt="section.headline"
+            sizes="(max-width: 541px) 48px, 56px"
             class="w-full h-full object-cover"
           />
-          <NuxtImg v-else src="/bg.png" :alt="section.headline" class="w-full h-full object-cover" />
+          <NuxtImg
+            v-else
+            src="/bg.png"
+            :alt="section.headline"
+            sizes="(max-width: 541px) 48px, 56px"
+            class="w-full h-full object-cover"
+          />
         </div>
 
         <span class="font-font-02 text-lg font-medium uppercase text-center whitespace-nowrap max-w-full text-ellipsis overflow-hidden pl-8 mb-4">{{ section.headline }}</span>

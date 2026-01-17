@@ -27,6 +27,7 @@ const buttonText = computed(() => {
       <NuxtImg
         :src="image?.path || image"
         :alt="title || 'Offer'"
+        sizes="(max-width: 768px) 100vw, 50vw"
         class="ad-hero__image"
       />
     </div>

@@ -48,6 +48,7 @@ const formattedDate = computed(() => {
               :key="imgIndex"
               :src="image?.path || placeholderAvatar"
               :alt="image?.alt || 'author'"
+              sizes="80px"
               class="w-full h-full object-cover"
             />
           </div>

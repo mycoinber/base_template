@@ -52,6 +52,7 @@ const formatDate = (raw) => {
                   :src="resolveAvatar(review)"
                   alt="author"
                   itemprop="image"
+                  sizes="80px"
                   class="w-full h-full object-cover"
                 />
               </div>

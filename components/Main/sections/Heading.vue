@@ -46,12 +46,23 @@ const image = computed(() => {
   if (props.block?.image && props.block.image.path) return props.block.image;
   return null;
 });
+
+const isImageLeft = computed(() => {
+  const order = Number(props.block?.order ?? 0);
+  if (!Number.isFinite(order)) return true;
+  return order % 2 === 0;
+});
 </script>
 
 <template>
   <section :id="block._id" class="my-8 max-[541px]:my-4">
     <div class="container">
-      <div class="flex flex-nowrap gap-8 w-full max-[541px]:flex-col">
+      <div
+        :class="[
+          'flex flex-nowrap gap-8 w-full max-[541px]:flex-col',
+          { 'flex-row-reverse': isImageLeft },
+        ]"
+      >
         <div class="flex-1 [&_a]:text-color-01">
           <h2 v-if="block.headline" class="mb-4">{{ block.headline }}</h2>
           <div v-html="contentHtml" />
@@ -61,6 +72,7 @@ const image = computed(() => {
           <NuxtImg
             :src="image.path"
             :alt="image.alt || block.headline || 'section image'"
+            sizes="(max-width: 541px) 100vw, 50vw"
             class="w-full h-full object-cover"
           />
         </div>

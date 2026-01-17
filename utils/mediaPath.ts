@@ -19,7 +19,10 @@ export const resolveMediaPath = (raw?: string | null) => {
 
 export const mediaProvider = (src?: string | null) => {
   if (!src) return undefined;
-  if (typeof src === 'string' && (src.startsWith('/siteid/') || src.startsWith('/media/'))) {
+  if (typeof src === 'string' && (src.startsWith('http://') || src.startsWith('https://'))) {
+    return 'none';
+  }
+  if (typeof src === 'string' && src.startsWith('/media/')) {
     return 'none';
   }
   return undefined;

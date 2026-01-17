@@ -7,6 +7,16 @@ const normalizeBaseUrl = (value?: string | null) => {
   return value.trim().replace(/\/+$/, "");
 };
 
+const toOrigin = (value?: string | null) => {
+  const normalized = normalizeBaseUrl(value);
+  if (!normalized) return "";
+  try {
+    return new URL(normalized).origin;
+  } catch {
+    return "";
+  }
+};
+
 const SITE_ID = (process.env.SITE_ID || "").trim();
 const MEDIA_STORAGE_URL = (process.env.MEDIA_STORAGE_URL || "").trim();
 const BACKEND_BASE_URL = normalizeBaseUrl(process.env.BACKEND_URL);
@@ -15,6 +25,8 @@ const SITEMAP_API_BASE =
   BACKEND_BASE_URL ||
   DEFAULT_SITEMAP_API_BASE;
 const CSS_SLUG = (process.env.SLUG || "site").trim() || "site";
+const SITE_URL = normalizeBaseUrl(process.env.SITE_URL);
+const SITE_NAME = (process.env.SITE_NAME || "").trim();
 
 export default defineNuxtConfig({
   devtools: { enabled: false },
@@ -38,7 +50,10 @@ export default defineNuxtConfig({
   schemaOrg: {
     defaults: false,
   },
-  site: {},
+  site: {
+    url: SITE_URL || undefined,
+    name: SITE_NAME || undefined,
+  },
 
   sitemap: {
     xsl: false,
@@ -64,6 +79,19 @@ export default defineNuxtConfig({
     head: {
       charset: "utf-8",
       viewport: "width=device-width, initial-scale=1",
+      style: [
+        {
+          children:
+            "html,body{background:#18181d;color:#fff;min-height:100%;}",
+        },
+      ],
+      link: [
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "" },
+        ...(toOrigin(MEDIA_STORAGE_URL)
+          ? [{ rel: "preconnect", href: toOrigin(MEDIA_STORAGE_URL) }]
+          : []),
+      ],
     },
   },
   nitro: {
@@ -104,12 +132,18 @@ export default defineNuxtConfig({
       mediaStorageUrl: MEDIA_STORAGE_URL || undefined,
       sitemapApiBase: SITEMAP_API_BASE,
       backHost: BACKEND_BASE_URL || undefined,
+      vercelAnalytics:
+        process.env.VERCEL === "1" || process.env.VERCEL === "true",
+      siteUrl: SITE_URL || undefined,
+      siteName: SITE_NAME || undefined,
     },
     server: {
       siteId: SITE_ID,
       backHost: BACKEND_BASE_URL || undefined,
       mediaStorageUrl: MEDIA_STORAGE_URL || undefined,
       sitemapApiBase: SITEMAP_API_BASE,
+      siteUrl: SITE_URL || undefined,
+      siteName: SITE_NAME || undefined,
     },
   },
   plugins: ["~/plugins/vue-query.ts"],
@@ -141,6 +175,9 @@ export default defineNuxtConfig({
       Inter: [400, 500, 700],
     },
     display: "swap",
+    preconnect: true,
+    preload: true,
+    useStylesheet: true,
   },
   compatibilityDate: "2024-11-26",
 });
