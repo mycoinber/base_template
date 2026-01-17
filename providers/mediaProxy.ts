@@ -14,7 +14,6 @@ const MIN_VARIANT_WIDTH = 320;
 const applyWidthVariant = (path: string, width?: string | number) => {
   if (!width) return { path, applied: false };
   if (!path.includes('/resized/')) return { path, applied: false };
-  if (resizedWithWidth.test(path)) return { path, applied: true };
   const widthNumber = Number(width);
   if (!Number.isFinite(widthNumber)) {
     return { path, applied: false };
@@ -22,6 +21,12 @@ const applyWidthVariant = (path: string, width?: string | number) => {
   const effectiveWidth = widthNumber < MIN_VARIANT_WIDTH ? MIN_VARIANT_WIDTH : Math.round(widthNumber);
   const normalizedWidth = String(effectiveWidth).trim();
   if (!normalizedWidth) return { path, applied: false };
+  if (resizedWithWidth.test(path)) {
+    return {
+      path: path.replace(/\/resized\/\d+\//, `/resized/${normalizedWidth}/`),
+      applied: true,
+    };
+  }
   return {
     path: path.replace(/\/resized\//, `/resized/${normalizedWidth}/`),
     applied: true,
