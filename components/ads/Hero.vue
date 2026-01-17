@@ -6,19 +6,19 @@ const props = defineProps({
     type: Object,
     required: true,
   },
-});
+})
 
-const data = computed(() => props.offer?.data || {});
-const image = computed(() => data.value.imageMedia || data.value.image || null);
-const title = computed(() => data.value.title || data.value.label || '');
-const description = computed(() => data.value.description || '');
-const link = computed(() => data.value.link || '#');
+const data = computed(() => props.offer?.data || {})
+const image = computed(() => data.value.imageMedia || data.value.image || null)
+const title = computed(() => data.value.title || data.value.label || '')
+const description = computed(() => data.value.description || '')
+const link = computed(() => data.value.link || '#')
 const buttonText = computed(() => {
   if (typeof data.value.ctaText === 'string' && data.value.ctaText.trim()) {
-    return data.value.ctaText.trim();
+    return data.value.ctaText.trim()
   }
-  return data.value.button || 'Learn more';
-});
+  return data.value.button || 'Learn more'
+})
 </script>
 
 <template>
