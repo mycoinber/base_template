@@ -13,6 +13,7 @@
 /public/*
 /.nuxt
 /.output
+/.wrangler
 
 # misc
 .DS_Store
