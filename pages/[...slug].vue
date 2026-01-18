@@ -766,6 +766,11 @@ const bodyJsCodes = computed(() => bodyBlocks.value
 
 // SSR редирект
 if (data.value?.redirect?.to && import.meta.server) {
-  await navigateTo(data.value.redirect.to, { redirectCode: data.value.redirect.statusCode || 301 });
+  const target = data.value.redirect.to;
+  const isExternal = /^https?:\/\//i.test(target);
+  await navigateTo(target, {
+    redirectCode: data.value.redirect.statusCode || 301,
+    external: isExternal,
+  });
 }
 </script>
