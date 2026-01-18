@@ -201,7 +201,8 @@ const serializeUrlEntry = (entry: RemoteSitemapEntry, baseUrl: string) => {
     return null;
   }
 
-  const pieces = [`  <url>`, `    <loc>${escapeXml(loc)}</loc>`];
+  const normalizedLoc = loc.endsWith('/') ? loc : `${loc}/`;
+  const pieces = [`  <url>`, `    <loc>${escapeXml(normalizedLoc)}</loc>`];
 
   if (entry.lastmod) {
     pieces.push(`    <lastmod>${escapeXml(entry.lastmod)}</lastmod>`);
