@@ -14,23 +14,11 @@ export default defineEventHandler(async (event) => {
 
   try {
     const endpoint = `${backendBase}/pages/nav`;
-    const result = await $fetch(endpoint, {
+    return await $fetch(endpoint, {
       params: { siteId },
     });
-
-    if (process.dev) {
-      console.info("[nav] fetched", { endpoint });
-    }
-
-    return result;
   } catch (error: any) {
     const statusCode = error?.statusCode || error?.response?.status || 500;
-    console.error("[Proxy Error] /nav", {
-      endpoint: `${backendBase}/pages/nav`,
-      siteId,
-      statusCode,
-      data: error?.data || error?.response?.data || error?.message,
-    });
     throw createError({ statusCode, statusMessage: "Failed to fetch navigation" });
   }
 });

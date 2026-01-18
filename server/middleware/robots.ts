@@ -30,8 +30,7 @@ export default defineEventHandler(async (event) => {
 
       event.node.res.setHeader("Content-Type", "text/plain");
       event.node.res.end(finalContent);
-    } catch (error) {
-      console.error("Failed to fetch robots.txt content:", error);
+    } catch {
       const defaultContent = `
 User-agent: *
 Disallow: /

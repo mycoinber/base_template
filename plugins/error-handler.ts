@@ -2,6 +2,6 @@
 export default defineNuxtPlugin((nuxtApp) => {
   nuxtApp.hook("vue:error", (err) => {
     // Здесь вы можете настроить логирование ошибок или другие действия
-    console.error("Произошла ошибка:", err);
+    void err;
   });
 });

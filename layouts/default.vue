@@ -9,24 +9,8 @@ const styles = useCssModule();
 const fetchPages = async () => {
   try {
     const response = await $axios.get(`/nav`);
-    if (process.dev) {
-      console.info('[layout] fetched nav data:', response.data);
-    }
     return response.data;
   } catch (error) {
-    const status = error?.response?.status;
-    const responseData = error?.response?.data;
-    const headers = error?.response?.headers;
-    const requestUrl = error?.config?.baseURL
-      ? `${error.config.baseURL}${error.config.url || ''}`
-      : error?.config?.url;
-    console.error('[layout] nav request failed', {
-      message: error?.message,
-      status,
-      requestUrl,
-      responseData,
-      headers,
-    });
     throw error;
   }
 };

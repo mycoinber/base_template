@@ -1,4 +1,5 @@
-import { defineEventHandler, getRouterParam, setHeader, setResponseStatus, createError } from 'h3'
+import { defineEventHandler, getRouterParam, setHeader, setResponseStatus, createError } from 'h3';
+import { createHash } from 'node:crypto';
 
 const sanitizePath = (raw: string) => {
   return raw
@@ -24,7 +25,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const target = `${baseUrl.replace(/\/$/, '')}/${cleanParam}`;
-  const cacheKey = `siteid:${cleanParam.toLowerCase()}`;
+  const rawCacheKey = `siteid:${cleanParam.toLowerCase()}`;
+  const cacheKey = createHash('sha1').update(rawCacheKey).digest('hex');
   const storage = useStorage('cache:media');
 
   const cachedMeta = await storage.getItem<{ contentType: string }>(`${cacheKey}:meta`).catch(() => null);
@@ -59,8 +61,7 @@ export default defineEventHandler(async (event) => {
     setHeader(event, 'cache-control', 'public, max-age=86400, s-maxage=31536000, immutable');
 
     return buffer;
-  } catch (err) {
-    console.error('[Media Proxy] Failed to fetch', target, err);
+  } catch {
     throw createError({ statusCode: 502, statusMessage: 'Failed to fetch media' });
   }
 });

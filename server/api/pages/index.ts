@@ -28,11 +28,6 @@ export default defineEventHandler(async (event) => {
     return await fetchPagePayload(backendBase, siteId);
   } catch (error: any) {
     const statusCode = error?.statusCode || error?.response?.status || 500;
-    console.error("[Proxy Error] /pages (root)", {
-      siteId,
-      statusCode,
-      data: error?.data || error?.response?.data || error?.message,
-    });
     throw createError({ statusCode, statusMessage: "Failed to fetch page" });
   }
 });

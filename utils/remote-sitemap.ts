@@ -40,40 +40,19 @@ export const createRemoteSitemapHandlers = (
   const resolved = resolveRemoteSitemapConfig(config);
   const siteId = resolved.siteId;
   const endpointBase = resolved.sitemapApiBase || resolved.backendBaseUrl;
-  let missingSiteIdLogged = false;
-  let missingEndpointLogged = false;
-
-  const warnMissingSiteId = () => {
-    if (missingSiteIdLogged) return;
-    missingSiteIdLogged = true;
-    console.warn('[remote-sitemap] SITE_ID is not configured. Skipping remote sitemap generation.');
-  };
-
-  const warnMissingEndpoint = () => {
-    if (missingEndpointLogged) return;
-    missingEndpointLogged = true;
-    console.warn('[remote-sitemap] SITEMAP_API_BASE/BACK_HOST is not configured. Skipping remote sitemap generation.');
-  };
 
   const fetchRemoteSitemap = async (): Promise<RemoteSitemapPayload | null> => {
-    if (!siteId) {
-      warnMissingSiteId();
-      return null;
-    }
-    if (!endpointBase) {
-      warnMissingEndpoint();
+    if (!siteId || !endpointBase) {
       return null;
     }
     const endpoint = `${endpointBase}/sites/sitemap?siteId=${siteId}`;
     try {
       const response = await fetch(endpoint);
       if (!response.ok) {
-        console.error('Failed to fetch sitemap payload', endpoint, response.status);
         return null;
       }
       return (await response.json()) as RemoteSitemapPayload;
-    } catch (error) {
-      console.error('Failed to fetch sitemap payload', endpoint, error);
+    } catch {
       return null;
     }
   };
@@ -196,8 +175,7 @@ const getRuntimeConfigSnapshot = (): Required<RemoteSitemapConfig> => {
       backendBaseUrl: server.backHost || publicConfig.backHost || '',
       sitemapApiBase: server.sitemapApiBase || publicConfig.sitemapApiBase || '',
     };
-  } catch (error) {
-    console.warn('[remote-sitemap] Failed to read runtime config', error);
+  } catch {
     return { siteId: '', backendBaseUrl: '', sitemapApiBase: '' };
   }
 };

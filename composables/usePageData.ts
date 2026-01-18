@@ -87,10 +87,20 @@ const normalizePageResponse = (payload: AnyObject, slug: string | null) => {
       ? introBlock.imageUrl
       : [];
 
+  const payloadFullSlug = typeof payload.fullSlug === "string" ? payload.fullSlug : null;
+  const payloadCanonicalSlug = typeof payload.canonicalSlug === "string" ? payload.canonicalSlug : null;
+  const payloadLocalePrefix = typeof payload.localePrefix === "string" ? payload.localePrefix : null;
+  const fallbackSlug = slug || "";
+  const canonicalFallback = payloadCanonicalSlug ?? payload.slug ?? fallbackSlug;
+  const normalizedFullSlug = payloadFullSlug ?? canonicalFallback;
+
   return {
     ...payload,
     type: payload.type || "page",
-    slug: payload.slug || slug || "",
+    slug: normalizedFullSlug || "",
+    fullSlug: normalizedFullSlug || "",
+    canonicalSlug: canonicalFallback || "",
+    localePrefix: payloadLocalePrefix,
     article: {
       ...article,
       H1: article.H1 || article.h1 || payload.head?.title || "",
@@ -116,6 +126,7 @@ export function usePageData(siteId: string, slug: string | null) {
   const { $axios } = useNuxtApp() as any;
 
   const siteLogo = useState<any[]>("siteLogo", () => []);
+  const langPrefixState = useState<string>("siteLangPrefix", () => "");
 
   const updateLogoState = (logo: any) => {
     siteLogo.value = Array.isArray(logo) ? logo : [];
@@ -126,10 +137,8 @@ export function usePageData(siteId: string, slug: string | null) {
       const endpoint = buildPageEndpoint(slug);
       const response = await $axios.get(endpoint);
       const payload = response.data || {};
-      if (process.dev) {
-        console.info('[usePageData] Fetched page payload:', payload);
-      }
       const normalized = normalizePageResponse(payload, slug);
+      langPrefixState.value = normalized.localePrefix || "";
       if (import.meta.client) {
         updateLogoState(normalized.logo);
       }
@@ -137,9 +146,6 @@ export function usePageData(siteId: string, slug: string | null) {
     } catch (error: any) {
       const status = Number(error?.response?.status) || 500;
       const message = error?.response?.data?.message || error?.message || "Failed to fetch page";
-      if (process.dev) {
-        console.warn('[usePageData] Request failed:', { status, message });
-      }
       throw createError({ statusCode: status, statusMessage: message });
     }
   };
@@ -156,6 +162,15 @@ export function usePageData(siteId: string, slug: string | null) {
     (id) => { currentOfferId.value = id || null; },
     { immediate: true },
   );
+
+  watch(
+    () => asyncData.data.value?.localePrefix,
+    (prefix) => {
+      langPrefixState.value = prefix || "";
+    },
+    { immediate: true },
+  );
+
   if (import.meta.client) {
     watch(
       () => asyncData.data.value?.logo,

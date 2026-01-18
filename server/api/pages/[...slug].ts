@@ -24,12 +24,6 @@ export default defineEventHandler(async (event) => {
     return result;
   } catch (error: any) {
     const statusCode = error?.statusCode || error?.response?.status || 500;
-    console.error("[Proxy Error] /pages/[slug]", {
-      siteId,
-      slug,
-      statusCode,
-      data: error?.data || error?.response?.data || error?.message,
-    });
     throw createError({ statusCode, statusMessage: "Failed to fetch page" });
   }
 });

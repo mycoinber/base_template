@@ -61,8 +61,7 @@ async function readManifestFromDisk(): Promise<WebsiteManifestPayload | null> {
     }
 
     return JSON.parse(text);
-  } catch (error) {
-    console.warn('[useSiteManifest] Failed to read site-manifest.json:', error);
+  } catch {
     return null;
   }
 }
