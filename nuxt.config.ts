@@ -1,5 +1,3 @@
-const DEFAULT_SITEMAP_API_BASE = "https://api.pbnmaster.online";
-
 const normalizeBaseUrl = (value?: string | null) => {
   if (!value) {
     return "";
@@ -20,10 +18,6 @@ const toOrigin = (value?: string | null) => {
 const SITE_ID = (process.env.SITE_ID || "").trim();
 const MEDIA_STORAGE_URL = (process.env.MEDIA_STORAGE_URL || "").trim();
 const BACKEND_BASE_URL = normalizeBaseUrl(process.env.BACKEND_URL);
-const SITEMAP_API_BASE =
-  normalizeBaseUrl(process.env.SITEMAP_API_BASE) ||
-  BACKEND_BASE_URL ||
-  DEFAULT_SITEMAP_API_BASE;
 const CSS_SLUG = (process.env.SLUG || "site").trim() || "site";
 const SITE_URL = normalizeBaseUrl(process.env.SITE_URL);
 const SITE_NAME = (process.env.SITE_NAME || "").trim();
@@ -130,7 +124,7 @@ export default defineNuxtConfig({
     public: {
       siteId: SITE_ID,
       mediaStorageUrl: MEDIA_STORAGE_URL || undefined,
-      sitemapApiBase: SITEMAP_API_BASE,
+      sitemapApiBase: BACKEND_BASE_URL,
       backHost: BACKEND_BASE_URL || undefined,
       vercelAnalytics:
         process.env.VERCEL === "1" || process.env.VERCEL === "true",
@@ -141,7 +135,7 @@ export default defineNuxtConfig({
       siteId: SITE_ID,
       backHost: BACKEND_BASE_URL || undefined,
       mediaStorageUrl: MEDIA_STORAGE_URL || undefined,
-      sitemapApiBase: SITEMAP_API_BASE,
+      sitemapApiBase: BACKEND_BASE_URL,
       siteUrl: SITE_URL || undefined,
       siteName: SITE_NAME || undefined,
     },

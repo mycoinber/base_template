@@ -15,12 +15,12 @@ const buildHandlers = () => {
 
   const envSiteId = (process.env.SITE_ID || '').trim();
   const envBackHost = (process.env.BACKEND_URL || '').trim();
-  const envSitemapApi = (process.env.SITEMAP_API_BASE || '').trim();
+  const envSitemapApi = (process.env.BACKEND_URL || '').trim();
 
   return createRemoteSitemapHandlers({
     siteId: envSiteId || serverConfig.siteId || publicConfig.siteId || '',
     backendBaseUrl: envBackHost || serverConfig.backHost || publicConfig.backHost || '',
-    sitemapApiBase: envSitemapApi || serverConfig.sitemapApiBase || publicConfig.sitemapApiBase || '',
+    sitemapApiBase: envSitemapApi || serverConfig.backHost || publicConfig.backHost || '',
   });
 };
 
