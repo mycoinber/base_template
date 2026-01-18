@@ -12,6 +12,7 @@ const props = defineProps({
 });
 
 const sharedLogo = useState("siteLogo", () => []);
+const langPrefix = useState("siteLangPrefix", () => "");
 
 const navigationLinks = computed(() => {
   return props.data?.pages
@@ -51,6 +52,24 @@ const resolvedLogo = computed(() => {
 const siteTitle = computed(() => {
   return props.data?.siteName || props.data?.name || props.data?.head?.title || 'site';
 });
+
+const normalizeRoutePath = (value) => {
+  if (!value) return ''
+  return String(value)
+    .replace(/^\/+/, '')
+    .replace(/\/+$/, '')
+    .replace(/\/{2,}/g, '/')
+}
+
+const resolveLink = (slug) => {
+  const prefix = normalizeRoutePath(langPrefix.value || '')
+  const destination = normalizeRoutePath(slug || '')
+  const segments = []
+  if (prefix) segments.push(prefix)
+  if (destination) segments.push(destination)
+  const path = segments.join('/')
+  return path ? `/${path}` : '/'
+}
 </script>
 
 <template>
@@ -59,7 +78,7 @@ const siteTitle = computed(() => {
       <div class="flex flex-col gap-8 py-12 pb-4 max-[541px]:items-start max-[541px]:py-4">
         <div class="flex items-center gap-20 max-[541px]:flex-col max-[541px]:items-start max-[541px]:gap-4">
           <div class="min-w-12 h-12 min-h-12 rounded overflow-hidden max-[541px]:min-w-8 max-[541px]:h-8 max-[541px]:min-h-8 max-[541px]:mb-4">
-            <NuxtLink to="/" class="w-full h-full block">
+            <NuxtLink :to="resolveLink('')" class="w-full h-full block">
               <NuxtImg
                 v-if="resolvedLogo"
                 :src="resolvedLogo?.path || ''"
@@ -72,7 +91,7 @@ const siteTitle = computed(() => {
           <nav>
             <ul class="flex gap-4 list-none m-0 p-0 max-[541px]:flex-col max-[541px]:items-start max-[541px]:gap-[0.675rem]">
               <li v-for="(link, index) in navigationLinks" :key="index" class="m-0">
-                <NuxtLink :to="`/${link.slug}`" external class="block text-base font-medium leading-[120%] transition-colors duration-300 text-color-white text-center max-[541px]:text-left max-[541px]:text-sm hover:text-color-01">{{ link.name }}</NuxtLink>
+              <NuxtLink :to="resolveLink(link.slug)" external class="block text-base font-medium leading-[120%] transition-colors duration-300 text-color-white text-center max-[541px]:text-left max-[541px]:text-sm hover:text-color-01">{{ link.name }}</NuxtLink>
               </li>
             </ul>
           </nav>

@@ -12,6 +12,7 @@ const props = defineProps({
 })
 
 const sharedLogo = useState('siteLogo', () => [])
+const langPrefix = useState('siteLangPrefix', () => '')
 
 const navigationLinks = computed(() => {
   return props.data?.pages
@@ -89,6 +90,24 @@ const headerPrimaryLabel = computed(() => {
 const headerSecondaryLabel = computed(() => {
   return headerOffer.value?.button2 || headerOffer.value?.ctaText || t('registration')
 })
+
+const normalizeRoutePath = (value) => {
+  if (!value) return ''
+  return String(value)
+    .replace(/^\/+/, '')
+    .replace(/\/+$/, '')
+    .replace(/\/{2,}/g, '/')
+}
+
+const resolveLink = (slug) => {
+  const prefix = normalizeRoutePath(langPrefix.value || '')
+  const destination = normalizeRoutePath(slug || '')
+  const segments = []
+  if (prefix) segments.push(prefix)
+  if (destination) segments.push(destination)
+  const path = segments.join('/')
+  return path ? `/${path}` : '/'
+}
 </script>
 
 <template>
@@ -103,7 +122,7 @@ const headerSecondaryLabel = computed(() => {
         <div
           class="min-w-12 h-12 min-h-12 rounded overflow-hidden max-[541px]:min-w-8 max-[541px]:h-8 max-[541px]:min-h-8"
         >
-          <NuxtLink to="/" class="w-full h-full block">
+          <NuxtLink :to="resolveLink('')" class="w-full h-full block">
             <NuxtImg
               v-if="resolvedLogo"
               :src="resolvedLogo?.path || ''"
@@ -117,7 +136,7 @@ const headerSecondaryLabel = computed(() => {
           <ul class="flex items-center gap-8 list-none m-0 overflow-hidden">
             <li v-for="(link, index) in navigationLinks" :key="index">
               <NuxtLink
-                :to="`/${link.slug}`"
+                :to="resolveLink(link.slug)"
                 external
                 class="block text-base font-medium text-color-white transition-colors duration-300 text-center hover:text-color-01 router-link-active:text-color-01"
                 >{{ link.name }}</NuxtLink
@@ -180,7 +199,7 @@ const headerSecondaryLabel = computed(() => {
         >
           <ul class="list-none m-0 p-0">
             <li v-for="(link, i) in navigationLinks" :key="i" class="mb-4">
-              <NuxtLink :to="`/${link.slug}`" class="text-white text-base font-medium">{{
+              <NuxtLink :to="resolveLink(link.slug)" class="text-white text-base font-medium">{{
                 link.name
               }}</NuxtLink>
             </li>

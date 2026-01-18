@@ -30,9 +30,6 @@ const fetchPage = async (siteId, slug = null) => {
     const response = await $axios.get("/pages/page-by-slug", { params });
     return response.data;
   } catch (error) {
-    console.error("Ошибка запроса:", error);
-    console.error("Код состояния:", error.response?.status);
-    console.error("Детали ошибки:", error.response?.data);
     return {}; // Возвращаем пустой объект в случае ошибки
   }
 };
@@ -235,7 +232,7 @@ if (data.value && Object.keys(data.value).length > 0) {
   //     })
   //   );
   // } else {
-  //   console.warn("ldJson отсутствует или не массив:", data.value?.ldJson);
+  
   //   useSchemaOrg([
   //     defineWebPage({
   //       name: pageHead.title || "Sweet Bonanza Oyunu Oyna",

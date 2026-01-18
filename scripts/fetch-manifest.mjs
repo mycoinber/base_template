@@ -16,17 +16,14 @@ const env = resolveTemplateEnv();
 const manifestUrl = `${env.backendBaseUrl}/pages/${env.siteId}/manifest`;
 const storageBase = env.mediaStorageUrl;
 
-console.log(`[fetch-manifest] Fetching manifest from ${manifestUrl}`);
-
 const manifestResponse = await fetch(manifestUrl, {
   headers: { accept: 'application/json' },
 });
 
 if (!manifestResponse.ok) {
-  console.error(
+  throw new Error(
     `[fetch-manifest] Failed to fetch manifest: ${manifestResponse.status} ${manifestResponse.statusText}`,
   );
-  process.exit(1);
 }
 
 const manifest = await manifestResponse.json();
@@ -35,26 +32,23 @@ await mkdir(publicDir, { recursive: true });
 
 const manifestOutputPath = join(publicDir, 'site-manifest.json');
 await writeFile(manifestOutputPath, JSON.stringify(manifest, null, 2));
-console.log(`[fetch-manifest] Manifest cached at ${manifestOutputPath}`);
 
 const { assets, manifestFile } = collectAssetsFromManifest(manifest, storageBase);
 
 const downloadedTargets = new Set(assets.keys());
 
 if (!assets.size) {
-  console.warn('[fetch-manifest] No assets discovered in manifest');
   process.exit(0);
 }
 
 let successCount = 0;
 for (const [targetName, sourceUrl] of assets.entries()) {
-  console.log(`[fetch-manifest] Downloading ${sourceUrl} → ${targetName}`);
   try {
     await downloadAsset(sourceUrl, join(publicDir, targetName));
     successCount += 1;
   } catch (error) {
-    console.error(`[fetch-manifest] Failed to download ${sourceUrl}:`, error);
-    process.exit(1);
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`[fetch-manifest] Failed to download ${sourceUrl}: ${message}`);
   }
 }
 
@@ -66,22 +60,18 @@ const additionalCount = await downloadManifestEmbeddedAssets({
 
 successCount += additionalCount;
 
-console.log(`[fetch-manifest] Downloaded ${successCount} asset(s) to ${publicDir}`);
-
 function resolveTemplateEnv() {
   const readEnv = (key) => (process.env[key] || '').trim();
   const normalizeBaseUrl = (value) => value.replace(/\/+$/, '');
 
   const siteId = readEnv('SITE_ID');
   if (!siteId) {
-    console.error('[fetch-manifest] SITE_ID is required');
-    process.exit(1);
+    throw new Error('[fetch-manifest] SITE_ID is required');
   }
 
   const backendBaseUrlRaw = readEnv('BACKEND_URL');
   if (!backendBaseUrlRaw) {
-    console.error('[fetch-manifest] BACKEND_URL is required');
-    process.exit(1);
+    throw new Error('[fetch-manifest] BACKEND_URL is required');
   }
 
   const backendBaseUrl = normalizeBaseUrl(backendBaseUrlRaw);
@@ -189,7 +179,6 @@ async function downloadManifestEmbeddedAssets({ manifestFile, storageBase, downl
 
   const localPath = join(publicDir, manifestFile.fileName);
   if (!existsSync(localPath)) {
-    console.warn('[fetch-manifest] Manifest file not found locally:', localPath);
     return 0;
   }
 
@@ -197,8 +186,7 @@ async function downloadManifestEmbeddedAssets({ manifestFile, storageBase, downl
   try {
     const raw = await readFile(localPath, 'utf-8');
     manifestContent = JSON.parse(raw);
-  } catch (error) {
-    console.warn('[fetch-manifest] Failed to parse manifest.webmanifest:', error);
+  } catch {
     return 0;
   }
 
@@ -249,13 +237,12 @@ async function downloadManifestEmbeddedAssets({ manifestFile, storageBase, downl
 
   let count = 0;
   for (const [targetName, sourceUrl] of additionalAssets.entries()) {
-    console.log(`[fetch-manifest] Downloading manifest asset ${sourceUrl} → ${targetName}`);
     try {
       await downloadAsset(sourceUrl, join(publicDir, targetName));
       count += 1;
     } catch (error) {
-      console.error(`[fetch-manifest] Failed to download ${sourceUrl}:`, error);
-      throw error;
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`[fetch-manifest] Failed to download ${sourceUrl}: ${message}`);
     }
   }
 

@@ -43,10 +43,14 @@ const manifestHead = computed(() => manifestToHead(siteManifestRaw.value));
 // --- HEAD LOGIC ---
 
 const pageHead = computed(() => data.value?.head || {});
-const pageLang = computed(() => data.value?.lang || "en");
+const pagePrimaryLang = computed(() => data.value?.primaryLang || null);
+const pageLang = computed(() => data.value?.lang || pagePrimaryLang.value || "en");
 const pageDomain = computed(() => data.value?.domain || siteDomain);
-const pageSlug = computed(() => data.value?.slug || slug || "");
-const pageUrl = computed(() => `${pageDomain.value}/${pageSlug.value}`.replace(/\/+$/, "/"));
+const pageSlug = computed(() => normalizeSlugForPath(data.value?.slug || slug || ""));
+const canonicalSlugValue = computed(() => normalizeSlugForPath(data.value?.canonicalSlug || data.value?.slug || slug || ""));
+const pageUrl = computed(() => buildAbsoluteHref(pageDomain.value, pageSlug.value));
+
+const canonicalHref = computed(() => buildAbsoluteHref(pageDomain.value, pageSlug.value));
 
 const normalizeSiteUrl = (value) => {
   if (!value) return "";
@@ -65,12 +69,7 @@ const schemaBaseUrl = computed(() => {
   return fallback;
 });
 
-const schemaPageUrl = computed(() => {
-  const base = schemaBaseUrl.value;
-  if (!base) return "";
-  const slugValue = String(pageSlug.value || "").replace(/^\/+/, "");
-  return slugValue ? `${base}/${slugValue}/` : `${base}/`;
-});
+const schemaPageUrl = computed(() => buildAbsoluteHref(schemaBaseUrl.value, pageSlug.value));
 
 // Парсим глобальные <meta> и <link>
 const globalHeadRaw = import.meta.server ? config.server.globalHead : config.public.globalHead;
@@ -124,6 +123,27 @@ const humanizeSegment = (value) => {
     .trim();
   if (!text) return "";
   return text.charAt(0).toUpperCase() + text.slice(1);
+};
+
+const normalizeSlugForPath = (value) => {
+  if (!value) return "";
+  return String(value)
+    .trim()
+    .replace(/^\/+/g, "")
+    .replace(/\/+/g, "/")
+    .replace(/\/+$/g, "");
+};
+
+const buildAbsoluteHref = (base, slugValue) => {
+  if (!base) return "";
+  const normalizedBase = base.endsWith("/") ? base : `${base}/`;
+  const normalizedSlug = normalizeSlugForPath(slugValue);
+  const relative = normalizedSlug ? `${normalizedSlug}/` : "";
+  try {
+    return normalizedSlug ? new URL(relative, normalizedBase).toString() : normalizedBase;
+  } catch (error) {
+    return normalizedSlug ? `${normalizedBase}${relative}` : normalizedBase;
+  }
 };
 
 const ogImage = computed(() => {
@@ -217,6 +237,55 @@ const schemaFaq = computed(() => {
     }
   }
   return faqs;
+});
+
+const normalizedAlters = computed(() => {
+  const alters = Array.isArray(data.value?.alters) ? data.value.alters : [];
+  return alters
+    .map((alter) => {
+      const slugValue = normalizeSlugForPath(alter?.slug);
+      const hreflangValue = typeof alter?.hreflang === "string" ? alter.hreflang.trim() : "";
+      if (!slugValue || !hreflangValue) return null;
+      return { slug: slugValue, hreflang: hreflangValue };
+    })
+    .filter((entry) => Boolean(entry && entry.slug && entry.hreflang));
+});
+
+const buildAlternateHref = (langSlug = "") => {
+  const prefix = normalizeSlugForPath(langSlug);
+  const segments = [];
+  if (prefix) segments.push(prefix);
+  if (canonicalSlugValue.value) segments.push(canonicalSlugValue.value);
+  const combined = segments.join("/");
+  return buildAbsoluteHref(siteDomain, combined);
+};
+
+const alternateLinks = computed(() => {
+  const links = [];
+  const primaryLang = pagePrimaryLang.value || pageLang.value;
+  const defaultHref = buildAlternateHref();
+  const seen = new Set();
+
+  if (primaryLang) {
+    links.push({ rel: "alternate", hreflang: primaryLang, href: defaultHref });
+    seen.add(`${primaryLang}-${defaultHref}`);
+  }
+
+  for (const alter of normalizedAlters.value) {
+    const href = buildAlternateHref(alter.slug);
+    const key = `${alter.hreflang}-${href}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    links.push({ rel: "alternate", hreflang: alter.hreflang, href });
+  }
+
+  const xDefaultKey = `x-default-${defaultHref}`;
+  if (!seen.has(xDefaultKey)) {
+    links.push({ rel: "alternate", hreflang: "x-default", href: defaultHref });
+    seen.add(xDefaultKey);
+  }
+
+  return links;
 });
 
 const schemaAuthor = computed(() => {
@@ -406,7 +475,7 @@ const headMeta = computed(() => {
     { property: "og:image", content: toContentString(ogImage.value) },
     { property: "og:image:width", content: toContentString(ogImageWidth.value) },
     { property: "og:image:height", content: toContentString(ogImageHeight.value) },
-    { property: "og:url", content: toContentString(`${pageDomain.value}/${pageSlug.value}`) },
+    { property: "og:url", content: toContentString(pageUrl.value) },
     { property: "og:type", content: "article" },
     { property: "og:site_name", content: toContentString(siteName.value) },
     { property: "og:locale", content: toContentString(pageLang.value) },
@@ -486,18 +555,9 @@ const headMeta = computed(() => {
 
 const headLinks = computed(() => {
   const manifestLinks = manifestHead.value.link || [];
-  const alternateLinks = Array.isArray(data.value?.alters)
-    ? data.value.alters.map(alter => ({
-        rel: "alternate",
-        hreflang: alter.hreflang,
-        href: `${siteDomain}/${alter.slug}/`,
-      }))
-    : [];
-
   const combined = [
-    { rel: "canonical", href: `${pageDomain.value}/${pageSlug.value}` },
-    { rel: "alternate", hreflang: pageLang.value, href: `${siteDomain}/${pageSlug.value}` },
-    ...alternateLinks,
+    { rel: "canonical", href: canonicalHref.value },
+    ...alternateLinks.value,
     ...manifestLinks,
     ...(globalHead.link || []),
   ].filter(Boolean);
