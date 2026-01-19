@@ -157,6 +157,7 @@ export function usePageData(siteId: string, slug: string | null) {
   );
 
   const currentOfferId = useState<string | null>("currentOfferId", () => null);
+  const currentOfferData = useState<any | null>("currentOfferData", () => null);
   watch(
     () => asyncData.data.value?.offers,
     (offers) => {
@@ -164,6 +165,7 @@ export function usePageData(siteId: string, slug: string | null) {
       const hero = list.find((entry) => entry?.placement === "hero") || null;
       const id = hero?.offer || hero?.data?.id || null;
       currentOfferId.value = id || null;
+      currentOfferData.value = hero?.data || null;
     },
     { immediate: true },
   );

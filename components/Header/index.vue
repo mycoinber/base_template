@@ -54,7 +54,7 @@ onUnmounted(() => {
   window.removeEventListener('scroll', updateScroll)
 })
 
-// Buttons now resolve offer link themselves via useOffer
+// Header CTA mirrors ads/hero logic (use offers.hero data)
 
 const resolvedLogo = computed(() => {
   const fromState = Array.isArray(sharedLogo.value) ? sharedLogo.value : []
@@ -72,31 +72,29 @@ const siteTitle = computed(() => {
   return props.data?.siteName || props.data?.name || props.data?.head?.title || 'site'
 })
 
-const currentOfferId = useState('currentOfferId', () => null)
-const { offer: activeOffer } = useOffer(currentOfferId)
-
-const resolveActiveOffer = (offer) => {
-  if (!offer) return null
-  if (offer.state && offer.state !== 'active') return null
-  if (!offer.link) return null
-  return offer
-}
+const storedOfferData = useState('currentOfferData', () => null)
 
 const headerOffer = computed(() => {
   const offers = Array.isArray(props.data?.offers) ? props.data.offers : []
-  const hero = offers.find((entry) => entry?.placement === 'hero')?.data || null
-  return resolveActiveOffer(hero) || resolveActiveOffer(activeOffer.value) || null
+  return offers.find((entry) => entry?.placement === 'hero') || null
 })
 
-const headerOfferLink = computed(() => headerOffer.value?.link || '')
+const headerOfferData = computed(() => headerOffer.value?.data || storedOfferData.value || {})
+
+const headerOfferLink = computed(() => headerOfferData.value?.link || '')
 
 const headerPrimaryLabel = computed(() => {
-  return headerOffer.value?.button1 || headerOffer.value?.ctaText || t('login')
+  const data = headerOfferData.value || {}
+  if (typeof data.ctaText === 'string' && data.ctaText.trim()) return data.ctaText.trim()
+  if (typeof data.button === 'string' && data.button.trim()) return data.button.trim()
+  if (typeof data.title === 'string' && data.title.trim()) return data.title.trim()
+  if (typeof data.label === 'string' && data.label.trim()) return data.label.trim()
+  return ''
 })
 
-const headerSecondaryLabel = computed(() => {
-  return headerOffer.value?.button2 || headerOffer.value?.ctaText || t('registration')
-})
+const headerOfferEnabled = computed(() =>
+  Boolean(headerOfferLink.value && headerPrimaryLabel.value)
+)
 
 const normalizeRoutePath = (value) => {
   if (!value) return ''
@@ -152,22 +150,19 @@ const resolveLink = (slug) => {
           </ul>
         </nav>
 
-        <ClientOnly>
-          <template #fallback>
-            <div class="hidden max-[541px]:hidden min-w-[16rem] h-[3.25rem]"></div>
-          </template>
-          <div class="flex items-center gap-4 max-[541px]:hidden min-w-[16rem] h-[3.25rem]">
-            <GeneralButton
-              v-if="headerOffer"
-              :data="{
-                link: headerOfferLink,
-                title: headerPrimaryLabel,
-                target: '_blank',
-                rel: 'noopener noreferrer',
-              }"
-            />
+        <div class="w-[10rem]">
+          <div class="max-[541px]:hidden w-full h-[3.25rem]">
+            <NuxtLink
+              v-if="headerOfferEnabled"
+              :href="headerOfferLink"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="font-font-02 inline-flex w-full items-center justify-center rounded-[0.4rem] bg-color-01 px-6 py-4 text-base font-medium uppercase text-color-white no-underline transition-[filter] duration-300 hover:brightness-[0.7]"
+            >
+              {{ headerPrimaryLabel }}
+            </NuxtLink>
           </div>
-        </ClientOnly>
+        </div>
 
         <div class="relative hidden max-[541px]:flex w-6 h-6 cursor-pointer" @click="toggleMenu">
           <span
