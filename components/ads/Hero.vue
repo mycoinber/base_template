@@ -22,97 +22,38 @@ const buttonText = computed(() => {
 </script>
 
 <template>
-  <div class="ad-hero">
-    <div class="ad-hero__media" v-if="image">
+  <div
+    class="grid grid-cols-1 gap-6 rounded-[0.625rem] border border-border bg-background-02 p-4 text-color-white md:grid-cols-2"
+  >
+    <div
+      v-if="image"
+      class="relative max-h-[22rem] min-h-[14rem] overflow-hidden rounded-[0.625rem] md:min-h-[20rem]"
+    >
       <NuxtImg
         :src="image?.path || image"
         :alt="title || 'Offer'"
         sizes="(max-width: 768px) 100vw, 50vw"
-        class="ad-hero__image"
+        class="block h-full w-full object-cover"
       />
     </div>
-    <div class="ad-hero__content">
-      <p class="ad-hero__badge">Advertisement</p>
-      <h2 class="ad-hero__title">{{ title }}</h2>
-      <p v-if="description" class="ad-hero__description">{{ description }}</p>
+    <div class="flex flex-col items-center justify-between text-center">
+      <div class="flex flex-col gap-2">
+        <h2 class="font-font-02 text-2xl font-semibold leading-tight max-[541px]:text-xl">
+          {{ title }}
+        </h2>
+        <p v-if="description" class="text-base leading-relaxed opacity-80">
+          {{ description }}
+        </p>
+      </div>
       <NuxtLink
         v-if="data.ctaText || data.button"
         :href="link"
         target="_blank"
         rel="noopener"
-        class="ad-hero__cta"
+        class="font-font-02 inline-flex w-full items-center justify-center rounded-[0.4rem] bg-color-01 px-6 py-4 text-base font-medium uppercase text-color-white no-underline transition-[filter] duration-300 hover:brightness-[0.7]"
       >
         {{ buttonText }}
       </NuxtLink>
     </div>
   </div>
 </template>
-
-<style scoped>
-.ad-hero {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  padding: 1.75rem;
-  border: 1px solid var(--border, rgba(148, 163, 184, 0.3));
-  border-radius: 1rem;
-  background: radial-gradient(circle at top, rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.6));
-  color: white;
-}
-
-.ad-hero__media {
-  position: relative;
-  overflow: hidden;
-  border-radius: 1rem;
-  min-height: 320px;
-}
-
-.ad-hero__image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.ad-hero__content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.ad-hero__badge {
-  font-size: 0.85rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  opacity: 0.7;
-}
-
-.ad-hero__title {
-  font-size: clamp(2rem, 3vw, 2.75rem);
-  font-weight: 700;
-  margin: 0;
-}
-
-.ad-hero__description {
-  font-size: 1rem;
-  line-height: 1.5;
-  opacity: 0.85;
-}
-
-.ad-hero__cta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.85rem 1.75rem;
-  border-radius: 999px;
-  font-weight: 600;
-  background: white;
-  color: #0f172a;
-  text-decoration: none;
-  transition: transform 0.15s ease;
-}
-
-.ad-hero__cta:hover {
-  transform: translateY(-1px);
-}
-</style>

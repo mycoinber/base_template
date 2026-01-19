@@ -158,8 +158,13 @@ export function usePageData(siteId: string, slug: string | null) {
 
   const currentOfferId = useState<string | null>("currentOfferId", () => null);
   watch(
-    () => asyncData.data.value?.offer?._id as string | undefined,
-    (id) => { currentOfferId.value = id || null; },
+    () => asyncData.data.value?.offers,
+    (offers) => {
+      const list = Array.isArray(offers) ? offers : [];
+      const hero = list.find((entry) => entry?.placement === "hero") || null;
+      const id = hero?.offer || hero?.data?.id || null;
+      currentOfferId.value = id || null;
+    },
     { immediate: true },
   );
 

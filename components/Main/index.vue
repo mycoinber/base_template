@@ -25,6 +25,12 @@ const heroOffer = computed(() => {
   return offers.find((entry) => entry?.placement === 'hero') || null;
 });
 
+const heroOfferList = computed(() => {
+  if (!heroOffer.value) return [];
+  const offers = Array.isArray(props.data?.offers) ? props.data.offers : [];
+  return offers.filter((entry) => entry?.placement === 'gallery');
+});
+
 const heroMedia = computed(() => {
   const offerMedia = heroOffer.value?.data?.imageMedia || heroOffer.value?.data?.image;
   if (offerMedia && typeof offerMedia === 'object' && offerMedia.path) {
@@ -98,7 +104,9 @@ if (import.meta.server) {
     v-if="heroOffer"
     class="relative w-full mb-8 overflow-hidden rounded-[0.625rem] border border-border"
   >
-    <AdsHero :offer="heroOffer" />
+    <div class="container">
+      <AdsHero :offer="heroOffer" />
+    </div>
   </section>
   <section
     v-else-if="heroMedia"
@@ -113,6 +121,8 @@ if (import.meta.server) {
     />
     <div class="absolute inset-x-0 bottom-0 h-[60%] bg-gradient-to-b from-transparent via-black/50 to-background-01 pointer-events-none"></div>
   </section>
+
+  <AdsHeroOfferList :offers="heroOfferList" />
 
   <MainTitle v-if="data.article?.H1" :data="data" />
 

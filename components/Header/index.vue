@@ -72,13 +72,20 @@ const siteTitle = computed(() => {
   return props.data?.siteName || props.data?.name || props.data?.head?.title || 'site'
 })
 
+const currentOfferId = useState('currentOfferId', () => null)
+const { offer: activeOffer } = useOffer(currentOfferId)
+
+const resolveActiveOffer = (offer) => {
+  if (!offer) return null
+  if (offer.state && offer.state !== 'active') return null
+  if (!offer.link) return null
+  return offer
+}
+
 const headerOffer = computed(() => {
   const offers = Array.isArray(props.data?.offers) ? props.data.offers : []
   const hero = offers.find((entry) => entry?.placement === 'hero')?.data || null
-  if (!hero) return null
-  if (hero.state && hero.state !== 'active') return null
-  if (!hero.link) return null
-  return hero
+  return resolveActiveOffer(hero) || resolveActiveOffer(activeOffer.value) || null
 })
 
 const headerOfferLink = computed(() => headerOffer.value?.link || '')
@@ -155,16 +162,6 @@ const resolveLink = (slug) => {
               :data="{
                 link: headerOfferLink,
                 title: headerPrimaryLabel,
-                target: '_blank',
-                rel: 'noopener noreferrer',
-              }"
-            />
-
-            <GeneralButtonTwo
-              v-if="headerOffer"
-              :data="{
-                link: headerOfferLink,
-                title: headerSecondaryLabel,
                 target: '_blank',
                 rel: 'noopener noreferrer',
               }"

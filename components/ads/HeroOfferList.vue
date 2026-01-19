@@ -1,0 +1,110 @@
+<script setup>
+import { computed } from 'vue'
+import { resolveMediaPath } from '~/utils/mediaPath'
+
+const props = defineProps({
+  offers: {
+    type: Array,
+    default: () => [],
+  },
+})
+
+const normalizedOffers = computed(() => (Array.isArray(props.offers) ? props.offers : []))
+
+const resolveImageSrc = (offer) => {
+  const data = offer?.data || {}
+  const candidate = data.imageMedia || data.image || null
+  if (!candidate) return ''
+  if (typeof candidate === 'string') {
+    const trimmed = candidate.trim()
+    if (!trimmed) return ''
+    if (trimmed.startsWith('http') || trimmed.startsWith('/')) {
+      return resolveMediaPath(trimmed)
+    }
+    return ''
+  }
+  if (typeof candidate === 'object') {
+    const rawPath = candidate.path || candidate.url || candidate.src || ''
+    if (typeof rawPath !== 'string') return ''
+    const trimmed = rawPath.trim()
+    return trimmed ? resolveMediaPath(trimmed) : ''
+  }
+  return ''
+}
+
+const resolveTitle = (offer) => {
+  const data = offer?.data || {}
+  return data.title || data.label || ''
+}
+
+const resolveLink = (offer) => {
+  const data = offer?.data || {}
+  return data.link || '#'
+}
+
+const resolveButtonText = (offer) => {
+  const data = offer?.data || {}
+  if (typeof data.ctaText === 'string' && data.ctaText.trim()) {
+    return data.ctaText.trim()
+  }
+  if (typeof data.button === 'string' && data.button.trim()) {
+    return data.button.trim()
+  }
+  return 'Learn more'
+}
+
+const cards = computed(() =>
+  normalizedOffers.value.map((offer, index) => ({
+    key: offer?.offer || offer?.id || offer?._id || `offer-${index}`,
+    imageSrc: resolveImageSrc(offer),
+    title: resolveTitle(offer),
+    link: resolveLink(offer),
+    buttonText: resolveButtonText(offer),
+  }))
+)
+</script>
+
+<template>
+  <section v-if="cards.length" class="my-8 max-[541px]:my-4">
+    <div class="container">
+      <div
+        class="grid grid-cols-4 gap-4 max-[541px]:flex max-[541px]:overflow-x-auto max-[541px]:pb-2 max-[541px]:-mx-4 max-[541px]:px-4"
+      >
+        <div
+          v-for="card in cards"
+          :key="card.key"
+          class="relative w-full overflow-hidden rounded-[0.625rem] border border-border bg-background-02 p-3 aspect-[4/3] max-[541px]:min-w-[14rem] max-[541px]:flex-none"
+        >
+          <div class="relative flex h-full w-full flex-col justify-end overflow-hidden rounded-[0.5rem]">
+            <img
+              v-if="card.imageSrc"
+              :src="card.imageSrc"
+              :alt="card.title || 'Offer'"
+              class="absolute inset-0 h-full w-full object-cover"
+              loading="lazy"
+            />
+            <div
+              v-if="card.imageSrc"
+              class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/10"
+            ></div>
+            <div
+              class="relative z-10 flex w-full flex-col justify-end gap-4 p-4 text-color-white"
+            >
+              <h3 class="font-font-02 text-lg font-semibold leading-tight">
+                {{ card.title }}
+              </h3>
+              <NuxtLink
+                :href="card.link"
+                target="_blank"
+                rel="noopener"
+                class="font-font-02 inline-flex w-full items-center justify-center rounded-[0.4rem] bg-color-01 px-4 py-3 text-sm font-medium uppercase text-color-white no-underline transition-[filter] duration-300 hover:brightness-[0.7]"
+              >
+                {{ card.buttonText }}
+              </NuxtLink>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</template>

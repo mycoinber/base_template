@@ -25,10 +25,19 @@ const SITE_NAME = (process.env.SITE_NAME || "").trim();
 export default defineNuxtConfig({
   devtools: { enabled: false },
   ssr: true,
+  experimental: {
+    appManifest: true,
+  },
   routeRules: {
     "/**": { isr: 7200 },
   },
   css: ["~/assets/css/tailwind.css", "~/assets/scss/main.scss"],
+  postcss: {
+    plugins: {
+      tailwindcss: {},
+      autoprefixer: {},
+    },
+  },
   modules: [
     "@nuxt/image-edge",
     "@nuxt/icon",
