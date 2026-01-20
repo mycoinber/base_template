@@ -29,6 +29,17 @@ const slugArray = Array.isArray(rawSlug)
     : [];
 
 const slug = slugArray.length ? slugArray.join("/") : "";
+
+// Игнорируем запросы к статическим файлам
+const staticFileExtensions = ['.svg', '.json', '.ico', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.txt', '.xml'];
+if (slug && staticFileExtensions.some(ext => slug.endsWith(ext))) {
+  throw createError({
+    statusCode: 404,
+    statusMessage: 'Not Found',
+    fatal: false
+  });
+}
+
 // Получаем данные страницы
 const { data, status, error } = await usePageData(siteId, slug);
 

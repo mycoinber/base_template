@@ -10,6 +10,16 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   ssr: true,
   routeRules: {
+    // Статические файлы не должны обрабатываться как страницы
+    '/ornament.svg': { prerender: true },
+    '/site-manifest.json': { prerender: true },
+    '/**/*.svg': { prerender: true },
+    '/**/*.json': { prerender: true },
+    '/**/*.ico': { prerender: true },
+    '/**/*.txt': { prerender: true },
+    '/**/*.xml': { prerender: true },
+    '/media/**': { prerender: true },
+    // Остальные страницы используют ISR
     "/**": { isr: 7200 },
   },
   css: ["~/assets/css/tailwind.css", "~/assets/scss/main.scss"],
@@ -89,9 +99,6 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       siteId: SITE_ID,
-      globalHead: JSON.parse(
-        readFileSync(resolve("site.json"), "utf-8")
-      ) as any,
       mediaStorageUrl: process.env.MEDIA_STORAGE_URL,
       sitemapApiBase: SITEMAP_API_BASE,
       backHost: BACKEND_BASE_URL || undefined,
@@ -99,9 +106,6 @@ export default defineNuxtConfig({
     server: {
       siteId: SITE_ID,
       backHost: BACKEND_BASE_URL || undefined,
-      globalHead: JSON.parse(
-        readFileSync(resolve("site.json"), "utf-8")
-      ) as any,
       mediaStorageUrl: process.env.MEDIA_STORAGE_URL,
       sitemapApiBase: SITEMAP_API_BASE,
     },
