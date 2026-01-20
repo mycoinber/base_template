@@ -116,12 +116,7 @@ const resolveLink = (slug) => {
 </script>
 
 <template>
-  <header
-    :class="[
-      'sticky top-0 left-0 z-10 w-full transition-colors duration-300',
-      { 'max-[541px]:bg-background-01': isMenuOpen, 'bg-background-01': isScrolled },
-    ]"
-  >
+  <header class="sticky top-0 left-0 z-10 w-full bg-background-01">
     <div class="container">
       <div class="flex items-center justify-between gap-4 py-4">
         <div

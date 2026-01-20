@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { resolveMediaPath } from '~/utils/mediaPath'
 
 const props = defineProps({
   offer: {
@@ -19,41 +20,62 @@ const buttonText = computed(() => {
   }
   return data.value.button || 'Learn more'
 })
+
+const imageSrc = computed(() => {
+  const media = image.value
+  if (!media) return ''
+  if (typeof media === 'string') {
+    const trimmed = media.trim()
+    return trimmed ? resolveMediaPath(trimmed) : ''
+  }
+  const variants = Array.isArray(media.variants) ? media.variants : []
+  if (variants.length) {
+    const sorted = [...variants].sort((a, b) => (b?.width || 0) - (a?.width || 0))
+    if (sorted[0]?.path) return resolveMediaPath(sorted[0].path)
+  }
+  const fallback = media.originalPath || media.path || ''
+  return fallback ? resolveMediaPath(fallback) : ''
+})
 </script>
 
 <template>
   <div
-    class="grid grid-cols-1 gap-6 rounded-[0.625rem] border border-border bg-background-02 p-4 text-color-white md:grid-cols-2"
+    class="relative w-full h-[40rem] overflow-hidden rounded-[0.625rem] border border-border text-color-white"
   >
-    <div
-      v-if="image"
-      class="relative max-h-[22rem] min-h-[14rem] overflow-hidden rounded-[0.625rem] md:min-h-[20rem]"
-    >
-      <NuxtImg
-        :src="image?.path || image"
+    <div class="absolute inset-0">
+      <img
+        v-if="imageSrc"
+        :src="imageSrc"
         :alt="title || 'Offer'"
-        sizes="(max-width: 768px) 100vw, 50vw"
-        class="block h-full w-full object-cover"
+        class="h-full w-full object-cover"
+        loading="lazy"
       />
     </div>
-    <div class="flex flex-col items-center justify-between text-center">
-      <div class="flex flex-col gap-2">
-        <h2 class="font-font-02 text-2xl font-semibold leading-tight max-[541px]:text-xl">
-          {{ title }}
-        </h2>
-        <p v-if="description" class="text-base leading-relaxed opacity-80">
-          {{ description }}
-        </p>
+    <div
+      class="absolute inset-0 bg-gradient-to-b from-black/10 via-black/60 to-background-01"
+    ></div>
+    <div class="relative z-10 h-full">
+      <div class="container h-full">
+        <div class="flex flex-col items-center justify-center gap-6 py-8 text-center h-full">
+          <div class="flex flex-col gap-2">
+            <h2 class="font-font-02 text-6xl font-semibold leading-tight max-[541px]:text-xl">
+              {{ title }}
+            </h2>
+            <p v-if="description" class="text-base leading-relaxed opacity-80">
+              {{ description }}
+            </p>
+          </div>
+          <NuxtLink
+            v-if="data.ctaText || data.button"
+            :href="link"
+            target="_blank"
+            rel="noopener"
+            class="font-font-02 inline-flex w-full items-center justify-center rounded-[0.4rem] bg-color-01 px-6 py-4 text-base font-medium uppercase text-color-white no-underline transition-[filter] duration-300 hover:brightness-[0.7] max-w-80"
+          >
+            {{ buttonText }}
+          </NuxtLink>
+        </div>
       </div>
-      <NuxtLink
-        v-if="data.ctaText || data.button"
-        :href="link"
-        target="_blank"
-        rel="noopener"
-        class="font-font-02 inline-flex w-full items-center justify-center rounded-[0.4rem] bg-color-01 px-6 py-4 text-base font-medium uppercase text-color-white no-underline transition-[filter] duration-300 hover:brightness-[0.7]"
-      >
-        {{ buttonText }}
-      </NuxtLink>
     </div>
   </div>
 </template>

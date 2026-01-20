@@ -1,6 +1,7 @@
 <script setup>
 import { useI18n } from 'vue-i18n';
 import { computed } from 'vue';
+import { resolveMediaPath } from '~/utils/mediaPath';
 const { t } = useI18n();
 
 const props = defineProps({
@@ -16,6 +17,24 @@ const { offer } = useOffer(computed(() => props.data.offer?._id))
 
 const heroSections = computed(() => {
   return offer.value?.sections?.filter(section => section.type === 'hero') || [];
+});
+
+const resolveMediaSrc = (media) => {
+  if (!media) return '';
+  const variants = Array.isArray(media.variants) ? media.variants : [];
+  if (variants.length) {
+    const sorted = [...variants].sort((a, b) => (b?.width || 0) - (a?.width || 0));
+    if (sorted[0]?.path) return resolveMediaPath(sorted[0].path);
+  }
+  const fallback = media.originalPath || media.path || '';
+  return fallback ? resolveMediaPath(fallback) : '';
+};
+
+const heroBackground = computed(() => {
+  const background = props.data?.offer?.background?.[0] || null;
+  if (background) return resolveMediaSrc(background);
+  const hero = Array.isArray(props.data?.hero) ? props.data.hero[0] : null;
+  return resolveMediaSrc(hero);
 });
 </script>
 
@@ -39,17 +58,11 @@ const heroSections = computed(() => {
 
       <div class="flex items-center justify-center w-full h-[40rem] relative rounded-[0.625rem] overflow-hidden max-[541px]:h-80">
         <div class="absolute top-0 left-0 w-full h-full">
-          <NuxtImg
-            v-if="data.offer?.background?.[0]?.path"
-            :src="data.offer.background[0].path"
-            sizes="(max-width: 541px) 100vw, 75vw"
+          <img
+            v-if="heroBackground"
+            :src="heroBackground"
             class="w-full h-full object-cover"
-          />
-          <NuxtImg
-            v-else
-            :src="data.hero[0]?.path || ''"
-            sizes="(max-width: 541px) 100vw, 75vw"
-            class="w-full h-full object-cover"
+            loading="lazy"
           />
         </div>
 

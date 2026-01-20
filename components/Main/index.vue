@@ -1,5 +1,6 @@
 <script setup>
 import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
+import { resolveMediaPath } from '~/utils/mediaPath';
 
 const props = defineProps({
   data: {
@@ -63,7 +64,18 @@ const heroAlt = computed(() => {
   return props.data?.article?.H1 || 'hero';
 });
 
-const heroMediaSrc = computed(() => heroMedia.value?.path || '');
+const heroMediaSrc = computed(() => {
+  const media = heroMedia.value;
+  if (!media) return '';
+  const variants = Array.isArray(media.variants) ? media.variants : [];
+  if (variants.length) {
+    const sorted = [...variants].sort((a, b) => (b?.width || 0) - (a?.width || 0));
+    const best = sorted[0];
+    if (best?.path) return resolveMediaPath(best.path);
+  }
+  const fallback = media.originalPath || media.path || '';
+  return fallback ? resolveMediaPath(fallback) : '';
+});
 
 const sectionComponents = {
   intro: defineAsyncComponent(() => import('./sections/Intro.vue')),
@@ -104,18 +116,15 @@ if (import.meta.server) {
     v-if="heroOffer"
     class="relative w-full mb-8 overflow-hidden rounded-[0.625rem] border border-border"
   >
-    <div class="container">
-      <AdsHero :offer="heroOffer" />
-    </div>
+    <AdsHero :offer="heroOffer" />
   </section>
   <section
     v-else-if="heroMedia"
     class="relative w-full mb-8 overflow-hidden rounded-[0.625rem] border border-border min-h-[20rem] max-[541px]:min-h-[14rem]"
   >
-    <NuxtImg
+    <img
       :src="heroMediaSrc"
       :alt="heroAlt"
-      sizes="100vw"
       class="absolute inset-0 w-full h-full object-cover"
       loading="lazy"
     />

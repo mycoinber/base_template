@@ -68,14 +68,16 @@ const cards = computed(() =>
   <section v-if="cards.length" class="my-8 max-[541px]:my-4">
     <div class="container">
       <div
-        class="grid grid-cols-4 gap-4 max-[541px]:flex max-[541px]:overflow-x-auto max-[541px]:pb-2 max-[541px]:-mx-4 max-[541px]:px-4"
+        class="grid grid-cols-5 gap-3 max-[541px]:flex max-[541px]:overflow-x-auto max-[541px]:pb-2 max-[541px]:-mx-4 max-[541px]:px-4"
       >
         <div
           v-for="card in cards"
           :key="card.key"
-          class="relative w-full overflow-hidden rounded-[0.625rem] border border-border bg-background-02 p-3 aspect-[4/3] max-[541px]:min-w-[14rem] max-[541px]:flex-none"
+          class="relative w-full overflow-hidden rounded-[0.625rem] border border-border bg-background-02 p-2 aspect-[4/3] max-[541px]:min-w-[12rem] max-[541px]:flex-none"
         >
-          <div class="relative flex h-full w-full flex-col justify-end overflow-hidden rounded-[0.5rem]">
+          <div
+            class="relative flex h-full w-full flex-col justify-end overflow-hidden rounded-[0.5rem]"
+          >
             <img
               v-if="card.imageSrc"
               :src="card.imageSrc"
@@ -87,17 +89,15 @@ const cards = computed(() =>
               v-if="card.imageSrc"
               class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/10"
             ></div>
-            <div
-              class="relative z-10 flex w-full flex-col justify-end gap-4 p-4 text-color-white"
-            >
-              <h3 class="font-font-02 text-lg font-semibold leading-tight">
+            <div class="relative z-10 flex w-full flex-col justify-end gap-3 p-3 text-color-white">
+              <h3 class="font-font-02 text-base font-semibold leading-tight text-center">
                 {{ card.title }}
               </h3>
               <NuxtLink
                 :href="card.link"
                 target="_blank"
                 rel="noopener"
-                class="font-font-02 inline-flex w-full items-center justify-center rounded-[0.4rem] bg-color-01 px-4 py-3 text-sm font-medium uppercase text-color-white no-underline transition-[filter] duration-300 hover:brightness-[0.7]"
+                class="font-font-02 inline-flex w-full items-center justify-center rounded-[0.4rem] bg-color-01 px-3 py-2.5 text-xs font-medium uppercase text-color-white no-underline transition-[filter] duration-300 hover:brightness-[0.7]"
               >
                 {{ card.buttonText }}
               </NuxtLink>
