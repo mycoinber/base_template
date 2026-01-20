@@ -58,18 +58,20 @@ const imageSrc = computed(() => {
       <div class="container h-full">
         <div class="flex flex-col items-center justify-center gap-6 py-8 text-center h-full">
           <div class="flex flex-col gap-2">
-            <h2 class="font-font-02 text-6xl font-semibold leading-tight max-[541px]:text-xl">
+            <span class="font-font-02 text-6xl font-semibold leading-tight max-[541px]:text-xl">
               {{ title }}
-            </h2>
+            </span>
+
             <p v-if="description" class="text-base leading-relaxed opacity-80">
               {{ description }}
             </p>
           </div>
+
           <NuxtLink
             v-if="data.ctaText || data.button"
             :href="link"
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer nofollow"
             class="font-font-02 inline-flex w-full items-center justify-center rounded-[0.4rem] bg-color-01 px-6 py-4 text-base font-medium uppercase text-color-white no-underline transition-[filter] duration-300 hover:brightness-[0.7] max-w-80"
           >
             {{ buttonText }}

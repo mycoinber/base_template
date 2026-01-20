@@ -9,7 +9,10 @@ const props = defineProps({
   },
 })
 
-const normalizedOffers = computed(() => (Array.isArray(props.offers) ? props.offers : []))
+const normalizedOffers = computed(() => {
+  const list = Array.isArray(props.offers) ? props.offers : []
+  return list.filter((offer) => offer?.placement === 'gallery')
+})
 
 const resolveImageSrc = (offer) => {
   const data = offer?.data || {}
@@ -93,14 +96,14 @@ const cards = computed(() =>
               <h3 class="font-font-02 text-base font-semibold leading-tight text-center">
                 {{ card.title }}
               </h3>
-              <NuxtLink
-                :href="card.link"
-                target="_blank"
-                rel="noopener"
-                class="font-font-02 inline-flex w-full items-center justify-center rounded-[0.4rem] bg-color-01 px-3 py-2.5 text-xs font-medium uppercase text-color-white no-underline transition-[filter] duration-300 hover:brightness-[0.7]"
-              >
-                {{ card.buttonText }}
-              </NuxtLink>
+            <NuxtLink
+              :href="card.link"
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              class="font-font-02 inline-flex w-full items-center justify-center rounded-[0.4rem] bg-color-01 px-3 py-2.5 text-xs font-medium uppercase text-color-white no-underline transition-[filter] duration-300 hover:brightness-[0.7]"
+            >
+              {{ card.buttonText }}
+            </NuxtLink>
             </div>
           </div>
         </div>

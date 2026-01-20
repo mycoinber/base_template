@@ -27,7 +27,6 @@ const heroOffer = computed(() => {
 });
 
 const heroOfferList = computed(() => {
-  if (!heroOffer.value) return [];
   const offers = Array.isArray(props.data?.offers) ? props.data.offers : [];
   return offers.filter((entry) => entry?.placement === 'gallery');
 });
@@ -114,13 +113,13 @@ if (import.meta.server) {
 
   <section
     v-if="heroOffer"
-    class="relative w-full mb-8 overflow-hidden rounded-[0.625rem] border border-border"
+    class="relative w-full mb-8 overflow-hidden rounded-[0.625rem] border border-border h-[40rem] max-[541px]:h-80"
   >
     <AdsHero :offer="heroOffer" />
   </section>
   <section
     v-else-if="heroMedia"
-    class="relative w-full mb-8 overflow-hidden rounded-[0.625rem] border border-border min-h-[20rem] max-[541px]:min-h-[14rem]"
+    class="relative w-full mb-8 overflow-hidden rounded-[0.625rem] border border-border h-[40rem] max-[541px]:h-80"
   >
     <img
       :src="heroMediaSrc"

@@ -72,23 +72,18 @@ const siteTitle = computed(() => {
   return props.data?.siteName || props.data?.name || props.data?.head?.title || 'site'
 })
 
-const storedOfferData = useState('currentOfferData', () => null)
-
 const headerOffer = computed(() => {
   const offers = Array.isArray(props.data?.offers) ? props.data.offers : []
-  return offers.find((entry) => entry?.placement === 'hero') || null
+  return offers.find((entry) => entry?.placement === 'header') || null
 })
 
-const headerOfferData = computed(() => headerOffer.value?.data || storedOfferData.value || {})
+const headerOfferData = computed(() => headerOffer.value?.data || {})
 
 const headerOfferLink = computed(() => headerOfferData.value?.link || '')
 
 const headerPrimaryLabel = computed(() => {
   const data = headerOfferData.value || {}
-  if (typeof data.ctaText === 'string' && data.ctaText.trim()) return data.ctaText.trim()
-  if (typeof data.button === 'string' && data.button.trim()) return data.button.trim()
   if (typeof data.title === 'string' && data.title.trim()) return data.title.trim()
-  if (typeof data.label === 'string' && data.label.trim()) return data.label.trim()
   return ''
 })
 
