@@ -76,8 +76,8 @@ const resolveLink = (slug) => {
   <footer>
     <div class="container">
       <div class="flex flex-col gap-8 py-12 pb-4 max-[541px]:items-start max-[541px]:py-4">
-        <div class="flex items-center gap-20 max-[541px]:flex-col max-[541px]:items-start max-[541px]:gap-4">
-          <div class="min-w-12 h-12 min-h-12 rounded overflow-hidden max-[541px]:min-w-8 max-[541px]:h-8 max-[541px]:min-h-8 max-[541px]:mb-4">
+        <div class="flex items-center justify-between gap-20 max-[541px]:flex-col max-[541px]:items-start max-[541px]:gap-4">
+          <div class="min-w-16 h-16 min-h-16 rounded overflow-hidden max-[541px]:min-w-10 max-[541px]:h-10 max-[541px]:min-h-10 max-[541px]:mb-4">
             <NuxtLink :to="resolveLink('')" class="w-full h-full block">
               <NuxtImg
                 v-if="resolvedLogo"
@@ -95,6 +95,10 @@ const resolveLink = (slug) => {
               </li>
             </ul>
           </nav>
+
+          <div class="max-[541px]:hidden w-[10rem] h-[3.25rem]">
+            <AdsFooterCta :offers="data?.offers" />
+          </div>
         </div>
 
         <div class="w-full text-center opacity-50 text-base max-[541px]:text-sm">

@@ -98,7 +98,7 @@ const resolveLink = (slug) => {
     <div class="container">
       <div class="flex items-center justify-between gap-4 py-4">
         <div
-          class="min-w-12 h-12 min-h-12 rounded overflow-hidden max-[541px]:min-w-8 max-[541px]:h-8 max-[541px]:min-h-8"
+          class="min-w-16 h-16 min-h-16 rounded overflow-hidden max-[541px]:min-w-10 max-[541px]:h-10 max-[541px]:min-h-10"
         >
           <NuxtLink :to="resolveLink('')" class="w-full h-full block">
             <NuxtImg
