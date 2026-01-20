@@ -72,24 +72,7 @@ const siteTitle = computed(() => {
   return props.data?.siteName || props.data?.name || props.data?.head?.title || 'site'
 })
 
-const headerOffer = computed(() => {
-  const offers = Array.isArray(props.data?.offers) ? props.data.offers : []
-  return offers.find((entry) => entry?.placement === 'header') || null
-})
-
-const headerOfferData = computed(() => headerOffer.value?.data || {})
-
-const headerOfferLink = computed(() => headerOfferData.value?.link || '')
-
-const headerPrimaryLabel = computed(() => {
-  const data = headerOfferData.value || {}
-  if (typeof data.title === 'string' && data.title.trim()) return data.title.trim()
-  return ''
-})
-
-const headerOfferEnabled = computed(() =>
-  Boolean(headerOfferLink.value && headerPrimaryLabel.value)
-)
+// Header CTA logic moved to components/ads/HeaderCta.vue
 
 const normalizeRoutePath = (value) => {
   if (!value) return ''
@@ -140,18 +123,8 @@ const resolveLink = (slug) => {
           </ul>
         </nav>
 
-        <div class="w-[10rem]">
-          <div class="max-[541px]:hidden w-full h-[3.25rem]">
-            <NuxtLink
-              v-if="headerOfferEnabled"
-              :href="headerOfferLink"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="font-font-02 inline-flex w-full items-center justify-center rounded-[0.4rem] bg-color-01 px-6 py-4 text-base font-medium uppercase text-color-white no-underline transition-[filter] duration-300 hover:brightness-[0.7]"
-            >
-              {{ headerPrimaryLabel }}
-            </NuxtLink>
-          </div>
+        <div class="max-[541px]:hidden w-[10rem] h-[3.25rem]">
+          <AdsHeaderCta :offers="data?.offers" />
         </div>
 
         <div class="relative hidden max-[541px]:flex w-6 h-6 cursor-pointer" @click="toggleMenu">

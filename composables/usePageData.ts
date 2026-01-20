@@ -158,14 +158,17 @@ export function usePageData(siteId: string, slug: string | null) {
 
   const currentOfferId = useState<string | null>("currentOfferId", () => null);
   const currentOfferData = useState<any | null>("currentOfferData", () => null);
+  const currentHeaderOfferData = useState<any | null>("currentHeaderOfferData", () => null);
   watch(
     () => asyncData.data.value?.offers,
     (offers) => {
       const list = Array.isArray(offers) ? offers : [];
       const hero = list.find((entry) => entry?.placement === "hero") || null;
+      const header = list.find((entry) => entry?.placement === "header") || null;
       const id = hero?.offer || hero?.data?.id || null;
       currentOfferId.value = id || null;
       currentOfferData.value = hero?.data || null;
+      currentHeaderOfferData.value = header?.data || null;
     },
     { immediate: true },
   );
