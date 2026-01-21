@@ -97,13 +97,13 @@ const resolveLink = (slug) => {
   <header class="sticky top-0 left-0 z-20 w-full bg-background-01">
     <div class="container">
       <div class="flex items-center justify-between gap-4 py-4">
-        <div class="h-16 rounded overflow-hidden max-[541px]:h-10 max-[541px]:flex-1">
-          <NuxtLink :to="resolveLink('')" class="flex h-full items-center justify-center w-fit">
+        <div class="h-16 rounded overflow-hidden max-[541px]:h-10">
+          <NuxtLink :to="resolveLink('')" class="flex h-full items-center w-fit">
             <NuxtImg
               v-if="resolvedLogo"
               :src="resolvedLogo?.path || ''"
               :alt="siteTitle"
-              class="h-full w-auto object-contain max-[541px]:w-full"
+              class="h-full w-auto object-contain"
             />
           </NuxtLink>
         </div>
