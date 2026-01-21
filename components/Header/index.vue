@@ -94,18 +94,16 @@ const resolveLink = (slug) => {
 </script>
 
 <template>
-  <header class="sticky top-0 left-0 z-10 w-full bg-background-01">
+  <header class="sticky top-0 left-0 z-20 w-full bg-background-01">
     <div class="container">
       <div class="flex items-center justify-between gap-4 py-4">
-        <div
-          class="min-w-16 h-16 min-h-16 rounded overflow-hidden max-[541px]:min-w-10 max-[541px]:h-10 max-[541px]:min-h-10"
-        >
-          <NuxtLink :to="resolveLink('')" class="w-full h-full block">
+        <div class="h-16 rounded overflow-hidden max-[541px]:h-10 max-[541px]:flex-1">
+          <NuxtLink :to="resolveLink('')" class="flex h-full items-center justify-center w-fit">
             <NuxtImg
               v-if="resolvedLogo"
               :src="resolvedLogo?.path || ''"
               :alt="siteTitle"
-              class="w-full h-full object-contain"
+              class="h-full w-auto object-contain max-[541px]:w-full"
             />
           </NuxtLink>
         </div>

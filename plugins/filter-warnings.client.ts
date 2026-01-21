@@ -1,20 +1,8 @@
 export default defineNuxtPlugin((nuxtApp) => {
-  // Filter out noisy Vue warnings in dev (client only)
+  if (import.meta.dev) return
+
   const vueApp = nuxtApp.vueApp
-
-  const shouldIgnore = (msg: unknown) => {
-    if (typeof msg !== 'string') return false
-    return (
-      msg.includes('<Suspense> is an experimental feature')
-    )
-  }
-
-  // Keep original warn handler if any
-  const origWarnHandler = vueApp.config.warnHandler
-  vueApp.config.warnHandler = (msg, instance, trace) => {
-    if (shouldIgnore(msg)) return
-    if (origWarnHandler) {
-      return origWarnHandler(msg, instance, trace)
-    }
+  vueApp.config.warnHandler = () => {
+    // no-op in production
   }
 })
