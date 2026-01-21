@@ -76,7 +76,7 @@ const cards = computed(() =>
         <div
           v-for="card in cards"
           :key="card.key"
-          class="relative w-full overflow-hidden rounded-[0.625rem] border border-border bg-background-02 p-2 aspect-[4/3] max-[541px]:min-w-[12rem] max-[541px]:flex-none"
+          class="relative w-full overflow-hidden rounded-[0.625rem] border border-border bg-background-02 p-2 aspect-[4/3] max-[541px]:min-w-[66.666%] max-[541px]:basis-[66.666%] max-[541px]:flex-none"
         >
           <div
             class="relative flex h-full w-full flex-col justify-end overflow-hidden rounded-[0.5rem]"

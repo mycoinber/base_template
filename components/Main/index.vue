@@ -113,13 +113,13 @@ if (import.meta.server) {
 
   <section
     v-if="heroOffer"
-    class="relative w-full mb-8 overflow-hidden rounded-[0.625rem] border border-border h-[40rem] max-[541px]:h-80"
+    class="relative w-full mb-8 overflow-hidden rounded-[0.625rem] border border-border"
   >
     <AdsHero :offer="heroOffer" />
   </section>
   <section
     v-else-if="heroMedia"
-    class="relative w-full mb-8 overflow-hidden rounded-[0.625rem] border border-border h-[40rem] max-[541px]:h-80"
+    class="relative w-full mb-8 overflow-hidden rounded-[0.625rem] border border-border h-[40rem] max-[541px]:min-h-[24rem]"
   >
     <img
       :src="heroMediaSrc"

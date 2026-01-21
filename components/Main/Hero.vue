@@ -56,7 +56,7 @@ const heroBackground = computed(() => {
         </div>
       </div>
 
-      <div class="flex items-center justify-center w-full h-[40rem] relative rounded-[0.625rem] overflow-hidden max-[541px]:h-80">
+      <div class="flex items-center justify-center w-full h-[40rem] relative rounded-[0.625rem] overflow-hidden max-[541px]:min-h-[24rem] max-[541px]:h-auto max-[541px]:py-6">
         <div class="absolute top-0 left-0 w-full h-full">
           <img
             v-if="heroBackground"

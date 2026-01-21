@@ -40,7 +40,7 @@ const imageSrc = computed(() => {
 
 <template>
   <div
-    class="relative w-full h-[40rem] overflow-hidden rounded-[0.625rem] border border-border text-color-white"
+    class="relative flex w-full min-h-[40rem] items-center justify-center overflow-hidden rounded-[0.625rem] border border-border text-color-white max-[541px]:min-h-[24rem]"
   >
     <div class="absolute inset-0">
       <img
@@ -54,9 +54,9 @@ const imageSrc = computed(() => {
     <div
       class="absolute inset-0 bg-gradient-to-b from-black/10 via-black/60 to-background-01"
     ></div>
-    <div class="relative z-10 h-full">
-      <div class="container h-full">
-        <div class="flex flex-col items-center justify-center gap-6 py-8 text-center h-full">
+    <div class="relative z-10 w-full">
+      <div class="container">
+        <div class="flex flex-col items-center justify-center gap-6 py-8 text-center">
           <div class="flex flex-col gap-2">
             <span class="font-font-02 text-6xl font-semibold leading-tight max-[541px]:text-xl">
               {{ title }}ы
