@@ -3,7 +3,7 @@
 @use "./variables/fonts";
 
 html {
-    font-size: 0.833vw;
+    font-size: 1.111vw; /* base: 1440px (16px at 1440px width) */
     scroll-behavior: smooth;
 
     @media (max-width: 541px) {
