@@ -18,6 +18,8 @@ export default {
         'color-01': 'var(--color-01)',
         'color-02': 'var(--color-02)',
         'color-03': 'var(--color-03)',
+        'pm-yellow': 'var(--pm-yellow)',
+        'pm-grey': 'var(--pm-grey)',
         'border': 'var(--border)',
       },
       borderColor: {

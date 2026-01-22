@@ -1,6 +1,6 @@
 :root {
     /* Цвета фона */
-    --background-01: #18181d;
+    --background-01: #000000;
     --background-02: #2d3345;
 
     /* Основные цвета */
@@ -9,11 +9,13 @@
     --color-01: #e00840;
     --color-02: #2b8ef9;
     --color-03: #ffe500;
+    --pm-yellow: #F8FF13;
+    --pm-grey: #C8C3C7;
 
     /* Границы */
     --border: #545969;
 
     /* Шрифты */
-    --font-01: "Inter", sans-serif;
-    --font-02: "Oswald", sans-serif;
+    --font-01: "ParimatchSans", sans-serif;
+    --font-02: "ParimatchSans", sans-serif;
 }
