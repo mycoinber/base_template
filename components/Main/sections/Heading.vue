@@ -53,7 +53,7 @@ const image = computed(() => {
     <div class="container">
       <div class="flex flex-nowrap gap-8 w-full max-[541px]:flex-col">
         <div class="flex-1 [&_a]:text-color-01">
-          <h2 v-if="block.headline" class="mb-4">{{ block.headline }}</h2>
+          <h2 v-if="block.headline" class="mb-4 !text-left">{{ block.headline }}</h2>
           <div v-html="contentHtml" />
         </div>
 

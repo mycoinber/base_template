@@ -35,7 +35,8 @@ const heroImage = computed(() => heroImages.value[0] || null);
     class="relative z-[2] mb-16 max-[541px]:min-h-[120vh] max-[541px]:h-fit"
     :class="{ 'w-full h-[65rem]': page.offer }"
   >
-    <div class="container">
+    <!-- Frame 23: flex-direction: column, align-items: center, gap: 48px -->
+    <div class="container flex flex-col items-center gap-12">
       <ClientOnly>
         <DelayHydration>
           <MainHero v-if="!isBot" :data="page" />
