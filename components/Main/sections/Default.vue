@@ -14,7 +14,7 @@ const props = defineProps({
       <div
         v-if="block.content"
         v-html="block.content"
-        class="prose prose-invert overflow-hidden max-[541px]:[&_table]:block max-[541px]:[&_table]:w-full max-[541px]:[&_table]:max-w-full max-[541px]:[&_table]:overflow-x-auto"
+        class="prose prose-invert overflow-hidden max-[541px]:[&_table]:block max-[541px]:[&_table]:w-full max-[541px]:[&_table]:max-w-full max-[541px]:[&_table]:overflow-x-auto max-[541px]:[&_table]:pb-2 max-[541px]:[&_table]:pr-2"
       />
     </div>
   </section>
