@@ -2,6 +2,7 @@
   "name": "nuxt-app",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@9.12.0",
   "scripts": {
     "prebuild": "node ./scripts/fetch-manifest.mjs",
     "build": "nuxt build",
