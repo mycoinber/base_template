@@ -54,7 +54,7 @@ onUnmounted(() => {
   window.removeEventListener('scroll', updateScroll)
 })
 
-// Buttons now resolve offer link themselves via useOffer
+// Header CTA mirrors ads/hero logic (use offers.hero data)
 
 const resolvedLogo = computed(() => {
   const fromState = Array.isArray(sharedLogo.value) ? sharedLogo.value : []
@@ -72,24 +72,7 @@ const siteTitle = computed(() => {
   return props.data?.siteName || props.data?.name || props.data?.head?.title || 'site'
 })
 
-const headerOffer = computed(() => {
-  const offers = Array.isArray(props.data?.offers) ? props.data.offers : []
-  const hero = offers.find((entry) => entry?.placement === 'hero')?.data || null
-  if (!hero) return null
-  if (hero.state && hero.state !== 'active') return null
-  if (!hero.link) return null
-  return hero
-})
-
-const headerOfferLink = computed(() => headerOffer.value?.link || '')
-
-const headerPrimaryLabel = computed(() => {
-  return headerOffer.value?.button1 || headerOffer.value?.ctaText || t('login')
-})
-
-const headerSecondaryLabel = computed(() => {
-  return headerOffer.value?.button2 || headerOffer.value?.ctaText || t('registration')
-})
+// Header CTA logic moved to components/ads/HeaderCta.vue
 
 const normalizeRoutePath = (value) => {
   if (!value) return ''
@@ -111,23 +94,16 @@ const resolveLink = (slug) => {
 </script>
 
 <template>
-  <header
-    :class="[
-      'sticky top-0 left-0 z-10 w-full transition-colors duration-300',
-      { 'max-[541px]:bg-background-01': isMenuOpen, 'bg-background-01': isScrolled },
-    ]"
-  >
+  <header class="sticky top-0 left-0 z-20 w-full bg-background-01">
     <div class="container">
       <div class="flex items-center justify-between gap-4 py-4">
-        <div
-          class="min-w-12 h-12 min-h-12 rounded overflow-hidden max-[541px]:min-w-8 max-[541px]:h-8 max-[541px]:min-h-8"
-        >
-          <NuxtLink :to="resolveLink('')" class="w-full h-full block">
+        <div class="h-16 rounded overflow-hidden max-[541px]:h-10">
+          <NuxtLink :to="resolveLink('')" class="flex h-full items-center w-fit">
             <NuxtImg
               v-if="resolvedLogo"
               :src="resolvedLogo?.path || ''"
               :alt="siteTitle"
-              class="w-full h-full object-contain"
+              class="h-full w-auto object-contain"
             />
           </NuxtLink>
         </div>
@@ -145,32 +121,9 @@ const resolveLink = (slug) => {
           </ul>
         </nav>
 
-        <ClientOnly>
-          <template #fallback>
-            <div class="hidden max-[541px]:hidden min-w-[16rem] h-[3.25rem]"></div>
-          </template>
-          <div class="flex items-center gap-4 max-[541px]:hidden min-w-[16rem] h-[3.25rem]">
-            <GeneralButton
-              v-if="headerOffer"
-              :data="{
-                link: headerOfferLink,
-                title: headerPrimaryLabel,
-                target: '_blank',
-                rel: 'noopener noreferrer',
-              }"
-            />
-
-            <GeneralButtonTwo
-              v-if="headerOffer"
-              :data="{
-                link: headerOfferLink,
-                title: headerSecondaryLabel,
-                target: '_blank',
-                rel: 'noopener noreferrer',
-              }"
-            />
-          </div>
-        </ClientOnly>
+        <div class="max-[541px]:hidden w-[10rem] h-[3.25rem]">
+          <AdsHeaderCta :offers="data?.offers" />
+        </div>
 
         <div class="relative hidden max-[541px]:flex w-6 h-6 cursor-pointer" @click="toggleMenu">
           <span

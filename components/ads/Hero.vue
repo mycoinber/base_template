@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { resolveMediaPath } from '~/utils/mediaPath'
 
 const props = defineProps({
   offer: {
@@ -19,100 +20,64 @@ const buttonText = computed(() => {
   }
   return data.value.button || 'Learn more'
 })
+
+const imageSrc = computed(() => {
+  const media = image.value
+  if (!media) return ''
+  if (typeof media === 'string') {
+    const trimmed = media.trim()
+    return trimmed ? resolveMediaPath(trimmed) : ''
+  }
+  const variants = Array.isArray(media.variants) ? media.variants : []
+  if (variants.length) {
+    const sorted = [...variants].sort((a, b) => (b?.width || 0) - (a?.width || 0))
+    if (sorted[0]?.path) return resolveMediaPath(sorted[0].path)
+  }
+  const fallback = media.originalPath || media.path || ''
+  return fallback ? resolveMediaPath(fallback) : ''
+})
 </script>
 
 <template>
-  <div class="ad-hero">
-    <div class="ad-hero__media" v-if="image">
-      <NuxtImg
-        :src="image?.path || image"
+  <div
+    class="relative flex w-full min-h-[40rem] items-center justify-center overflow-hidden rounded-[0.625rem] border border-border text-color-white max-[541px]:min-h-[24rem]"
+  >
+    <div class="absolute inset-0">
+      <img
+        v-if="imageSrc"
+        :src="imageSrc"
         :alt="title || 'Offer'"
-        sizes="(max-width: 768px) 100vw, 50vw"
-        class="ad-hero__image"
+        class="h-full w-full object-cover"
+        loading="lazy"
       />
     </div>
-    <div class="ad-hero__content">
-      <p class="ad-hero__badge">Advertisement</p>
-      <h2 class="ad-hero__title">{{ title }}</h2>
-      <p v-if="description" class="ad-hero__description">{{ description }}</p>
-      <NuxtLink
-        v-if="data.ctaText || data.button"
-        :href="link"
-        target="_blank"
-        rel="noopener"
-        class="ad-hero__cta"
-      >
-        {{ buttonText }}
-      </NuxtLink>
+    <div
+      class="absolute inset-0 bg-gradient-to-b from-black/10 via-black/60 to-background-01"
+    ></div>
+    <div class="relative z-10 w-full">
+      <div class="container">
+        <div class="flex flex-col items-center justify-center gap-6 py-8 text-center">
+          <div class="flex flex-col gap-2">
+            <span class="font-font-02 text-6xl font-semibold leading-tight max-[541px]:text-xl">
+              {{ title }}ы
+            </span>
+
+            <p v-if="description" class="text-base leading-relaxed opacity-80">
+              {{ description }}
+            </p>
+          </div>
+
+          <NuxtLink
+            v-if="data.ctaText || data.button"
+            :href="link"
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            class="font-font-02 inline-flex w-full items-center justify-center rounded-[0.4rem] bg-color-01 px-6 py-4 text-base font-medium uppercase text-color-white no-underline transition-[filter] duration-300 hover:brightness-[0.7] max-w-80"
+          >
+            {{ buttonText }}
+          </NuxtLink>
+        </div>
+      </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.ad-hero {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  padding: 1.75rem;
-  border: 1px solid var(--border, rgba(148, 163, 184, 0.3));
-  border-radius: 1rem;
-  background: radial-gradient(circle at top, rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.6));
-  color: white;
-}
-
-.ad-hero__media {
-  position: relative;
-  overflow: hidden;
-  border-radius: 1rem;
-  min-height: 320px;
-}
-
-.ad-hero__image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.ad-hero__content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.ad-hero__badge {
-  font-size: 0.85rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  opacity: 0.7;
-}
-
-.ad-hero__title {
-  font-size: clamp(2rem, 3vw, 2.75rem);
-  font-weight: 700;
-  margin: 0;
-}
-
-.ad-hero__description {
-  font-size: 1rem;
-  line-height: 1.5;
-  opacity: 0.85;
-}
-
-.ad-hero__cta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.85rem 1.75rem;
-  border-radius: 999px;
-  font-weight: 600;
-  background: white;
-  color: #0f172a;
-  text-decoration: none;
-  transition: transform 0.15s ease;
-}
-
-.ad-hero__cta:hover {
-  transform: translateY(-1px);
-}
-</style>

@@ -157,9 +157,22 @@ export function usePageData(siteId: string, slug: string | null) {
   );
 
   const currentOfferId = useState<string | null>("currentOfferId", () => null);
+  const currentOfferData = useState<any | null>("currentOfferData", () => null);
+  const currentHeaderOfferData = useState<any | null>("currentHeaderOfferData", () => null);
+  const currentFooterOfferData = useState<any | null>("currentFooterOfferData", () => null);
   watch(
-    () => asyncData.data.value?.offer?._id as string | undefined,
-    (id) => { currentOfferId.value = id || null; },
+    () => asyncData.data.value?.offers,
+    (offers) => {
+      const list = Array.isArray(offers) ? offers : [];
+      const hero = list.find((entry) => entry?.placement === "hero") || null;
+      const header = list.find((entry) => entry?.placement === "header") || null;
+      const footer = list.find((entry) => entry?.placement === "footer") || null;
+      const id = hero?.offer || hero?.data?.id || null;
+      currentOfferId.value = id || null;
+      currentOfferData.value = hero?.data || null;
+      currentHeaderOfferData.value = header?.data || null;
+      currentFooterOfferData.value = footer?.data || null;
+    },
     { immediate: true },
   );
 
