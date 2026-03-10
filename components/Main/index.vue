@@ -81,6 +81,7 @@ const sectionComponents = {
   h2: defineAsyncComponent(() => import('./sections/Heading.vue')),
   section: defineAsyncComponent(() => import('./sections/Heading.vue')),
   review: defineAsyncComponent(() => import('./sections/Review.vue')),
+  product_review: defineAsyncComponent(() => import('./sections/ProductReview.vue')),
   faq: defineAsyncComponent(() => import('./sections/Faq.vue')),
   default: defineAsyncComponent(() => import('./sections/Default.vue')),
 };
