@@ -1,6 +1,5 @@
 <script setup>
 import { computed } from "vue";
-import { parse } from "node-html-parser";
 import { resolveMediaPath } from "~/utils/mediaPath";
 
 const props = defineProps({
@@ -10,130 +9,7 @@ const props = defineProps({
   },
 });
 
-const SECTION_TITLES = {
-  quick_facts: "Quick Facts",
-  how_offer_works: "How the Offer Works",
-  key_terms: "Key Terms That Matter",
-  pros: "Pros",
-  cons: "Cons",
-  best_for: "Best For / Not Ideal For",
-  bottom_line: "Bottom Line",
-};
-
-const parseParagraphNodes = (html) => {
-  if (!html || typeof html !== "string") return [];
-
-  if (import.meta.server) {
-    const root = parse(html);
-    const nodes = root.querySelectorAll("p");
-    return nodes.map((node) => ({
-      label: String(node.getAttribute("data-pr-section-label") || "").trim(),
-      html: String(node.innerHTML || "").trim(),
-      text: String(node.text || "").replace(/\s+/g, " ").trim(),
-    }));
-  }
-
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, "text/html");
-  const nodes = Array.from(doc.querySelectorAll("p"));
-  return nodes.map((node) => ({
-    label: String(node.getAttribute("data-pr-section-label") || "").trim(),
-    html: String(node.innerHTML || "").trim(),
-    text: String(node.textContent || "").replace(/\s+/g, " ").trim(),
-  }));
-};
-
-const toTitleFromKey = (value = "") =>
-  String(value)
-    .split("_")
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-
-const splitKeyValue = (value) => {
-  const text = String(value || "").replace(/\s+/g, " ").trim();
-  if (!text) return null;
-  const separators = [" - ", " — ", " – ", ": "];
-  for (const separator of separators) {
-    const idx = text.indexOf(separator);
-    if (idx > 0 && idx < text.length - separator.length) {
-      return {
-        term: text.slice(0, idx).trim(),
-        description: text.slice(idx + separator.length).trim(),
-      };
-    }
-  }
-  return null;
-};
-
-const structuredContent = computed(() => {
-  const raw = props.block?.content || "";
-  const entries = parseParagraphNodes(raw);
-
-  const intro = [];
-  const sections = [];
-  let activeSection = null;
-
-  for (const entry of entries) {
-    if (!entry?.text) continue;
-
-    if (entry.label) {
-      const key = entry.label.toLowerCase();
-      activeSection = {
-        key,
-        title: entry.text || SECTION_TITLES[key] || toTitleFromKey(key),
-        paragraphs: [],
-      };
-      sections.push(activeSection);
-      continue;
-    }
-
-    if (!activeSection) {
-      intro.push(entry);
-      continue;
-    }
-
-    activeSection.paragraphs.push(entry);
-  }
-
-  const normalizedSections = sections.map((section) => {
-    const facts = [];
-    const listItems = [];
-    const audience = [];
-    const extraParagraphs = [];
-
-    for (const paragraph of section.paragraphs) {
-      const pair = splitKeyValue(paragraph.text);
-
-      if (section.key === "quick_facts" && pair) {
-        facts.push(pair);
-        continue;
-      }
-
-      if (section.key === "best_for" && pair) {
-        audience.push(pair);
-        continue;
-      }
-
-      if (section.key === "pros" || section.key === "cons") {
-        listItems.push(paragraph.text);
-        continue;
-      }
-
-      extraParagraphs.push(paragraph);
-    }
-
-    return {
-      ...section,
-      facts,
-      audience,
-      listItems,
-      paragraphs: extraParagraphs,
-    };
-  });
-
-  return { intro, sections: normalizedSections };
-});
+const contentHtml = computed(() => String(props.block?.content || "").trim());
 
 const sectionImage = computed(() => {
   if (Array.isArray(props.block?.imageUrl) && props.block.imageUrl.length) {
@@ -161,9 +37,6 @@ const sectionImageSrc = computed(() => {
 });
 
 const sectionHeadline = computed(() => props.block?.headline || props.block?.H2 || "Product Review");
-const hasStructuredContent = computed(
-  () => structuredContent.value.intro.length > 0 || structuredContent.value.sections.length > 0,
-);
 
 const isImageLeft = computed(() => {
   const order = Number(props.block?.order ?? 0);
@@ -181,76 +54,14 @@ const isImageLeft = computed(() => {
           { 'flex-row-reverse': isImageLeft },
         ]"
       >
-        <div
-          class="flex-1 overflow-hidden [&_a]:text-color-01 max-[541px]:[&_table]:block max-[541px]:[&_table]:w-full max-[541px]:[&_table]:max-w-full max-[541px]:[&_table]:overflow-x-auto max-[541px]:[&_table]:pb-2 max-[541px]:[&_table]:pr-2"
-        >
-          <h2>{{ sectionHeadline }}</h2>
+        <div class="flex-1">
+          <h2 class="mb-4">{{ sectionHeadline }}</h2>
 
           <div
-            v-if="structuredContent.intro.length"
-            class="space-y-2"
-          >
-            <p v-for="(intro, index) in structuredContent.intro" :key="`intro-${index}`" v-html="intro.html" />
-          </div>
-
-          <div
-            v-else-if="block?.content"
-            class="prose prose-invert overflow-hidden"
-            v-html="block.content"
+            v-if="contentHtml"
+            class="product-review-content"
+            v-html="contentHtml"
           />
-
-          <template v-if="hasStructuredContent">
-            <section
-              v-for="(section, sectionIndex) in structuredContent.sections"
-              :key="`${section.key}-${sectionIndex}`"
-              class="mt-6"
-            >
-              <h3>{{ section.title }}</h3>
-
-              <div
-                v-if="section.key === 'quick_facts' && section.facts.length"
-                class="overflow-hidden max-[541px]:overflow-x-auto"
-              >
-                <table>
-                  <tbody>
-                    <tr v-for="(fact, factIndex) in section.facts" :key="`fact-${factIndex}`">
-                      <th>{{ fact.term }}</th>
-                      <td>{{ fact.description }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div
-                v-else-if="section.key === 'best_for' && section.audience.length"
-                class="grid grid-cols-2 gap-8 max-[541px]:grid-cols-1"
-              >
-                <div v-for="(entry, entryIndex) in section.audience" :key="`aud-${entryIndex}`">
-                  <h4>{{ entry.term }}</h4>
-                  <p>{{ entry.description }}</p>
-                </div>
-              </div>
-
-              <ul
-                v-else-if="(section.key === 'pros' || section.key === 'cons') && section.listItems.length"
-              >
-                <li
-                  v-for="(item, itemIndex) in section.listItems"
-                  :key="`item-${itemIndex}`"
-                >
-                  {{ item }}
-                </li>
-              </ul>
-
-              <div v-else>
-                <p
-                  v-for="(paragraph, paragraphIndex) in section.paragraphs"
-                  :key="`paragraph-${paragraphIndex}`"
-                  v-html="paragraph.html"
-                />
-              </div>
-            </section>
-          </template>
         </div>
 
         <div v-if="sectionImageSrc" class="flex-1">
@@ -267,3 +78,216 @@ const isImageLeft = computed(() => {
     </div>
   </section>
 </template>
+
+<style scoped>
+.product-review-content {
+  --pr-card: color-mix(in srgb, var(--background-02) 92%, #111827);
+  --pr-border: color-mix(in srgb, var(--border) 82%, #374151);
+  --pr-accent: var(--color-01);
+  --pr-success: #10b981;
+  --pr-warning: #f59e0b;
+  margin-top: 0.25rem;
+}
+
+.product-review-content :deep(section[data-type="product_review"]) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.product-review-content :deep(section[data-type="product_review"] > p) {
+  grid-column: 1 / -1;
+  margin: 0;
+  text-align: center;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--color-white) 88%, #9ca3af);
+}
+
+.product-review-content :deep(.pr-section) {
+  margin-top: 0;
+  border: 1px solid var(--pr-border);
+  border-radius: 0.75rem;
+  background: var(--pr-card);
+}
+
+.product-review-content :deep(.pr-section p:last-child) {
+  margin-bottom: 0;
+}
+
+.product-review-content :deep(.pr-section-how_offer_works),
+.product-review-content :deep(.pr-section-key_terms),
+.product-review-content :deep(.pr-section-pros),
+.product-review-content :deep(.pr-section-cons) {
+  padding: 1.2rem;
+  position: relative;
+}
+
+.product-review-content :deep(.pr-section-how_offer_works::before),
+.product-review-content :deep(.pr-section-key_terms::before),
+.product-review-content :deep(.pr-section-pros::before),
+.product-review-content :deep(.pr-section-cons::before) {
+  display: inline-block;
+  margin-bottom: 0.65rem;
+  font-family: var(--font-02);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-white) 72%, #9ca3af);
+}
+
+.product-review-content :deep(.pr-section-how_offer_works::before) {
+  content: "How Offer Works";
+}
+
+.product-review-content :deep(.pr-section-key_terms::before) {
+  content: "Key Terms";
+}
+
+.product-review-content :deep(.pr-section-pros::before) {
+  content: "Pros";
+}
+
+.product-review-content :deep(.pr-section-cons::before) {
+  content: "Cons";
+}
+
+.product-review-content :deep(.pr-section-how_offer_works p),
+.product-review-content :deep(.pr-section-key_terms p),
+.product-review-content :deep(.pr-section-pros p),
+.product-review-content :deep(.pr-section-cons p) {
+  margin: 0;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--color-white) 82%, #9ca3af);
+}
+
+.product-review-content :deep(.pr-section-quick_facts) {
+  grid-column: 1 / -1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow-x: auto;
+}
+
+.product-review-content :deep(.pr-section-quick_facts table) {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 34rem;
+}
+
+.product-review-content :deep(.pr-section-best_for) {
+  grid-column: 1 / -1;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+.product-review-content :deep(.pr-fit-grid) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.product-review-content :deep(.pr-fit-item) {
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--pr-border);
+}
+
+.product-review-content :deep(.pr-fit-item-best) {
+  border-color: color-mix(in srgb, var(--pr-success) 26%, var(--pr-border));
+  background: color-mix(in srgb, var(--pr-success) 7%, var(--pr-card));
+}
+
+.product-review-content :deep(.pr-fit-item-not-ideal) {
+  border-color: color-mix(in srgb, var(--pr-warning) 26%, var(--pr-border));
+  background: color-mix(in srgb, var(--pr-warning) 8%, var(--pr-card));
+}
+
+.product-review-content :deep(.pr-fit-label) {
+  margin: 0 0 0.45rem;
+  font-family: var(--font-02);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.product-review-content :deep(.pr-fit-label-best) {
+  color: color-mix(in srgb, var(--pr-success) 76%, var(--color-white));
+}
+
+.product-review-content :deep(.pr-fit-label-not-ideal) {
+  color: color-mix(in srgb, var(--pr-warning) 76%, var(--color-white));
+}
+
+.product-review-content :deep(.pr-fit-text) {
+  margin: 0;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--color-white) 88%, #9ca3af);
+}
+
+.product-review-content :deep(.pr-section-bottom_line) {
+  grid-column: 1 / -1;
+  padding: 1.35rem 1.2rem;
+  text-align: center;
+}
+
+.product-review-content :deep(.pr-section-bottom_line::before) {
+  content: "Final Verdict";
+  display: inline-block;
+  margin-bottom: 0.7rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--pr-accent) 28%, var(--pr-border));
+  background: color-mix(in srgb, var(--pr-accent) 12%, transparent);
+  font-family: var(--font-02);
+  font-size: 0.68rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--pr-accent) 72%, var(--color-white));
+}
+
+.product-review-content :deep(.pr-bottom-line) {
+  margin: 0;
+  font-size: 1.08rem;
+  line-height: 1.62;
+  font-style: italic;
+  color: color-mix(in srgb, var(--color-white) 90%, #9ca3af);
+}
+
+@media (max-width: 900px) {
+  .product-review-content :deep(section[data-type="product_review"]) {
+    grid-template-columns: 1fr;
+  }
+
+  .product-review-content :deep(section[data-type="product_review"] > p),
+  .product-review-content :deep(.pr-section-quick_facts),
+  .product-review-content :deep(.pr-section-best_for),
+  .product-review-content :deep(.pr-section-bottom_line) {
+    grid-column: auto;
+  }
+
+  .product-review-content :deep(.pr-fit-grid) {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 541px) {
+  .product-review-content :deep(section[data-type="product_review"] > p) {
+    text-align: left;
+    font-size: 0.95rem;
+  }
+
+  .product-review-content :deep(.pr-section-quick_facts) {
+    overflow-x: auto;
+  }
+
+  .product-review-content :deep(.pr-section-quick_facts table) {
+    min-width: 30rem;
+  }
+
+  .product-review-content :deep(.pr-bottom-line) {
+    font-size: 0.98rem;
+  }
+}
+</style>

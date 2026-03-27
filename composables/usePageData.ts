@@ -31,6 +31,42 @@ const normalizeFaqs = (faqs: any, blockId: string) => {
 const stripHtml = (value: unknown) =>
   typeof value === "string" ? value.replace(/<[^>]*>/g, "").trim() : "";
 
+const toTrimmedString = (value: unknown) =>
+  typeof value === "string" ? value.trim() : "";
+
+const resolveReviewAuthorName = (review: AnyObject, index: number) => {
+  const explicitName = toTrimmedString(review?.name);
+  if (explicitName) return explicitName;
+
+  const authorBio = toTrimmedString(review?.authorBio);
+  if (authorBio) return authorBio;
+
+  if (typeof review?.author === "string") {
+    const authorAsString = toTrimmedString(review.author);
+    if (authorAsString) return authorAsString;
+  }
+
+  const author = review?.author && typeof review.author === "object" ? review.author : null;
+  const firstName = toTrimmedString(author?.name);
+  const lastName = toTrimmedString(author?.surname || author?.lastName || author?.last);
+  const nickname = toTrimmedString(author?.nickname);
+  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+
+  if (fullName) return fullName;
+  if (nickname) return nickname;
+  return `Reviewer ${index + 1}`;
+};
+
+const resolveReviewDate = (review: AnyObject) => {
+  const directDate = toTrimmedString(review?.date);
+  if (directDate) return directDate;
+  const updatedAt = toTrimmedString(review?.updatedAt);
+  if (updatedAt) return updatedAt;
+  const createdAt = toTrimmedString(review?.createdAt);
+  if (createdAt) return createdAt;
+  return null;
+};
+
 const normalizeReviews = (reviews: any, blockId: string) => {
   if (!Array.isArray(reviews) || reviews.length === 0) return null;
   const mapped = reviews
@@ -38,16 +74,17 @@ const normalizeReviews = (reviews: any, blockId: string) => {
       const avatarPictures = normalizeMediaArray(
         review?.author?.picture || review?.authorAvatar || review?.authorAvatarMedia,
       );
+      const reviewAuthor = review?.author && typeof review.author === "object" ? review.author : {};
       const comment = review?.comment || review?.content || "";
       return {
         ...review,
         _id: review?._id || `${blockId}-review-${index}`,
-        name: review?.name || review?.authorBio || review?.author || `Reviewer ${index + 1}`,
+        name: resolveReviewAuthorName(review, index),
         comment,
         rating: review?.rating ?? null,
-        date: review?.date || review?.updatedAt || review?.createdAt || new Date().toISOString(),
+        date: resolveReviewDate(review),
         author: {
-          ...(review?.author || {}),
+          ...reviewAuthor,
           picture: avatarPictures,
         },
       };

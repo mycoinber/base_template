@@ -1,11 +1,20 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
   block: {
     type: Object,
     default: () => ({}),
   },
+});
+
+const normalizedFaqs = computed(() => {
+  const faqs = Array.isArray(props.block?.faqs) ? props.block.faqs : [];
+  return faqs.filter((faq) => {
+    const question = typeof faq?.question === 'string' ? faq.question.trim() : '';
+    const answer = typeof faq?.answer === 'string' ? faq.answer.trim() : '';
+    return Boolean(question && answer);
+  });
 });
 
 const activeIndex = ref(0);
@@ -15,17 +24,18 @@ const toggleFAQ = (index) => {
 </script>
 
 <template>
-  <section v-if="block?.faqs?.length" :id="block._id" class="my-8 max-[541px]:my-4 max-[541px]:mb-8">
+  <section v-if="normalizedFaqs.length" :id="block._id" class="my-8 max-[541px]:my-4 max-[541px]:mb-8">
     <div class="container">
       <h2>{{ block?.headline || block?.H2 }}</h2>
 
       <div class="flex flex-col" itemscope itemtype="https://schema.org/FAQPage">
         <div
-          v-for="(faq, index) in block.faqs"
+          v-for="(faq, index) in normalizedFaqs"
           :key="faq._id || index"
           class="border-b border-[#ddd]"
           itemscope
           itemtype="https://schema.org/Question"
+          itemprop="mainEntity"
         >
           <h3
             :class="[
@@ -51,10 +61,13 @@ const toggleFAQ = (index) => {
             ]"
             itemscope
             itemtype="https://schema.org/Answer"
+            itemprop="acceptedAnswer"
           >
-            <p class="text-sm" itemprop="text">
-              {{ faq.answer }}
-            </p>
+            <div
+              class="text-sm [&_p:last-child]:mb-0 [&_p]:mb-3"
+              itemprop="text"
+              v-html="faq.answer"
+            />
           </div>
         </div>
       </div>

@@ -1,4 +1,6 @@
 <script setup>
+import { resolveMediaPath } from '~/utils/mediaPath';
+
 const props = defineProps({
   block: {
     type: Object,
@@ -8,17 +10,48 @@ const props = defineProps({
 
 const placeholderAvatar = '/avatar-placeholder.svg';
 
+const toTrimmedString = (value) => (typeof value === 'string' ? value.trim() : '');
+
+const isMediaPath = (value) =>
+  typeof value === 'string' && (value.startsWith('/') || value.startsWith('http://') || value.startsWith('https://'));
+
 const resolveAvatar = (review) => {
-  if (Array.isArray(review?.author?.picture) && review.author.picture.length) {
-    return review.author.picture[0].path;
+  const candidates = [
+    Array.isArray(review?.author?.picture) ? review.author.picture[0]?.path : null,
+    review?.author?.picture?.path,
+    review?.authorAvatarMedia?.path,
+    review?.authorAvatar?.path,
+    review?.author?.avatar?.path,
+    typeof review?.author?.avatar === 'string' ? review.author.avatar : null,
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    if (isMediaPath(candidate)) {
+      return resolveMediaPath(candidate);
+    }
   }
-  if (review?.authorAvatarMedia?.path) {
-    return review.authorAvatarMedia.path;
-  }
-  if (review?.authorAvatar?.path) {
-    return review.authorAvatar.path;
-  }
+
   return placeholderAvatar;
+};
+
+const resolveAuthorName = (review, index) => {
+  const directName = toTrimmedString(review?.name);
+  if (directName) return directName;
+
+  const authorBio = toTrimmedString(review?.authorBio);
+  if (authorBio) return authorBio;
+
+  if (typeof review?.author === 'string') {
+    const authorAsString = toTrimmedString(review.author);
+    if (authorAsString) return authorAsString;
+  }
+
+  const author = review?.author && typeof review.author === 'object' ? review.author : null;
+  const firstName = toTrimmedString(author?.name);
+  const lastName = toTrimmedString(author?.surname || author?.lastName || author?.last);
+  const nickname = toTrimmedString(author?.nickname);
+  const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+  return fullName || nickname || `Reviewer ${index + 1}`;
 };
 
 const formatDate = (raw) => {
@@ -58,12 +91,12 @@ const formatDate = (raw) => {
               </div>
 
               <div class="flex flex-col flex-1">
-                <span class="text-sm opacity-50 w-full text-right" itemprop="datePublished">
+                <span v-if="formatDate(review.date)" class="text-sm opacity-50 w-full text-right" itemprop="datePublished">
                   {{ formatDate(review.date) }}
                 </span>
 
                 <span class="font-font-02 text-[1.35rem] font-bold" itemprop="author">
-                  {{ review.authorBio || review.name }}
+                  {{ resolveAuthorName(review, index) }}
                 </span>
               </div>
             </div>

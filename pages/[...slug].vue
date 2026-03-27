@@ -289,7 +289,7 @@ const alternateLinks = computed(() => {
 });
 
 const schemaAuthor = computed(() => {
-  const author = data.value?.aiauthor;
+  const author = data.value?.author || data.value?.aiauthor;
   if (!author) return null;
   const nameCandidate = author?.name;
   const first = nameCandidate?.first || "";
@@ -297,7 +297,9 @@ const schemaAuthor = computed(() => {
   const fullName = [first, last].filter(Boolean).join(" ").trim() || nameCandidate?.full || nameCandidate?.value || "";
   const name = String(fullName || author?.name || author?.fullName || "").trim();
   if (!name) return null;
-  const imageCandidate = Array.isArray(author?.picture) ? author.picture[0]?.path : author?.picture?.path;
+  const imageCandidate = Array.isArray(author?.picture)
+    ? author.picture[0]?.path
+    : author?.picture?.path || author?.avatarMedia?.path || author?.avatar?.path;
   const imageUrl = toAbsoluteUrl(imageCandidate, schemaBaseUrl.value || pageDomain.value);
   const description = stripHtml(author?.bio);
   const authorId = schemaPageUrl.value ? `${schemaPageUrl.value}#author` : undefined;

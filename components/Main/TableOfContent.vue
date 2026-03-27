@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   data: {
@@ -10,13 +10,21 @@ const props = defineProps({
 
 const isOpen = ref(false)
 
+const tocItems = computed(() => {
+  const blocks = Array.isArray(props.data?.article?.blocks) ? props.data.article.blocks : []
+  return blocks.filter((block) => {
+    const title = String(block?.H2 || block?.headline || block?.title || '').trim()
+    return Boolean(title)
+  })
+})
+
 function toggle() {
   isOpen.value = !isOpen.value
 }
 </script>
 
 <template>
-  <section v-if="data.article?.blocks.length" class="my-8 max-[541px]:my-4">
+  <section v-if="tocItems.length" class="my-8 max-[541px]:my-4">
     <div class="container">
       <nav
         class="w-full p-4 rounded-[0.625rem] bg-background-02"
@@ -49,7 +57,7 @@ function toggle() {
             itemtype="https://schema.org/ItemList"
           >
             <li
-              v-for="(item, index) in data.article.blocks"
+              v-for="(item, index) in tocItems"
               :key="item._id"
               class="text-color-white relative pl-8 transition-all duration-300 opacity-50 text-sm m-0 hover:text-color-01 hover:opacity-100"
               itemprop="itemListElement"
@@ -59,7 +67,7 @@ function toggle() {
               <span class="absolute left-0 top-1/2 -translate-y-1/2">{{ index + 1 }}.</span>
               <a :href="'#' + item._id" class="text-inherit text-sm" itemprop="url">
                 <meta itemprop="position" :content="index + 1" />
-                <span itemprop="name">{{ item.H2 }}</span>
+                <span itemprop="name">{{ item.H2 || item.headline || item.title }}</span>
               </a>
             </li>
           </ul>

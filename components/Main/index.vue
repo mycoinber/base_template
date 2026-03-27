@@ -92,6 +92,8 @@ const resolveSection = (type) => {
   return sectionComponents[key] || sectionComponents.default;
 };
 
+const hasAuthor = computed(() => Boolean(props.data?.author || props.data?.aiauthor));
+
 const isLoaded = ref(import.meta.server);
 const isBot = useState('isBot', () => false);
 
@@ -147,5 +149,5 @@ if (import.meta.server) {
     :is-loaded="isLoaded"
   />
 
-  <MainAuthor v-if="data.aiauthor" :data="data" />
+  <MainAuthor v-if="hasAuthor" :data="data" />
 </template>
