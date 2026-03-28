@@ -11,6 +11,38 @@ const props = defineProps({
 
 const contentHtml = computed(() => String(props.block?.content || "").trim());
 
+const splitProductReviewContent = (value = "") => {
+  const source = String(value || "").trim();
+  if (!source) {
+    return { introHtml: "", bodyHtml: "" };
+  }
+
+  const sectionOpenMatch = source.match(/<section\b[^>]*>/i);
+  const sectionBodyMatch = source.match(/<section\b[^>]*>([\s\S]*?)<\/section>/i);
+  if (!sectionOpenMatch || !sectionBodyMatch) {
+    return { introHtml: "", bodyHtml: source };
+  }
+
+  const sectionOpen = sectionOpenMatch[0];
+  const sectionBody = sectionBodyMatch[1] || "";
+  const firstSectionMatch = sectionBody.match(/<div\b[^>]*class="[^"]*pr-section[^"]*"[^>]*>/i);
+
+  if (!firstSectionMatch || typeof firstSectionMatch.index !== "number") {
+    return { introHtml: sectionBody.trim(), bodyHtml: "" };
+  }
+
+  const firstSectionStart = firstSectionMatch.index;
+  const introHtml = sectionBody.slice(0, firstSectionStart).trim();
+  const bodyInner = sectionBody.slice(firstSectionStart).trim();
+  const bodyHtml = bodyInner ? `${sectionOpen}${bodyInner}</section>` : "";
+
+  return { introHtml, bodyHtml };
+};
+
+const splitContent = computed(() => splitProductReviewContent(contentHtml.value));
+const introHtml = computed(() => splitContent.value.introHtml);
+const bodyHtml = computed(() => splitContent.value.bodyHtml || (!splitContent.value.introHtml ? contentHtml.value : ""));
+
 const sectionImage = computed(() => {
   if (Array.isArray(props.block?.imageUrl) && props.block.imageUrl.length) {
     return props.block.imageUrl[0];
@@ -50,21 +82,21 @@ const isImageLeft = computed(() => {
     <div class="container">
       <div
         :class="[
-          'flex flex-nowrap gap-8 w-full max-[541px]:flex-col',
-          { 'flex-row-reverse': isImageLeft },
+          'product-review-head',
+          { 'product-review-head--reverse': isImageLeft },
         ]"
       >
-        <div class="flex-1">
+        <div class="product-review-intro">
           <h2 class="mb-4">{{ sectionHeadline }}</h2>
 
           <div
-            v-if="contentHtml"
-            class="product-review-content"
-            v-html="contentHtml"
+            v-if="introHtml"
+            class="product-review-intro-content"
+            v-html="introHtml"
           />
         </div>
 
-        <div v-if="sectionImageSrc" class="flex-1">
+        <div v-if="sectionImageSrc" class="product-review-media">
           <div class="w-full aspect-square rounded-[0.625rem] overflow-hidden">
             <img
               :src="sectionImageSrc"
@@ -75,11 +107,54 @@ const isImageLeft = computed(() => {
           </div>
         </div>
       </div>
+
+      <div
+        v-if="bodyHtml"
+        class="product-review-content mt-4"
+        v-html="bodyHtml"
+      />
     </div>
   </section>
 </template>
 
 <style scoped>
+.product-review-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.product-review-head--reverse {
+  flex-direction: row-reverse;
+}
+
+.product-review-intro {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.product-review-media {
+  flex: 0 0 16.6667%;
+  max-width: 16.6667%;
+  min-width: 0;
+}
+
+.product-review-intro-content :deep(p) {
+  margin: 0 0 0.8rem;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  text-align: left;
+  color: color-mix(in srgb, var(--color-white) 88%, #9ca3af);
+}
+
+.product-review-intro-content :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.product-review-intro h2 {
+  text-align: left;
+}
+
 .product-review-content {
   --pr-card: color-mix(in srgb, var(--background-02) 92%, #111827);
   --pr-border: color-mix(in srgb, var(--border) 82%, #374151);
@@ -98,7 +173,7 @@ const isImageLeft = computed(() => {
 .product-review-content :deep(section[data-type="product_review"] > p) {
   grid-column: 1 / -1;
   margin: 0;
-  text-align: center;
+  text-align: left;
   font-size: 1.05rem;
   line-height: 1.6;
   color: color-mix(in srgb, var(--color-white) 88%, #9ca3af);
@@ -256,6 +331,18 @@ const isImageLeft = computed(() => {
 }
 
 @media (max-width: 900px) {
+  .product-review-head,
+  .product-review-head--reverse {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .product-review-media {
+    flex: none;
+    max-width: 100%;
+    width: 100%;
+  }
+
   .product-review-content :deep(section[data-type="product_review"]) {
     grid-template-columns: 1fr;
   }
