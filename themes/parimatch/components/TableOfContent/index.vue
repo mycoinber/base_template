@@ -167,7 +167,7 @@ function scrollToSection(id: string, toggle: (id: string) => void) {
     font-size: 14px;
     line-height: 17px;
     text-transform: uppercase;
-    color: #000000;
+    color: var(--text-inverse, #000000);
     white-space: nowrap;
   }
 

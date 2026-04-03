@@ -48,9 +48,6 @@ const heroCtaText = computed(() => activeOffer.value?.data?.ctaText || '');
 const heroCtaLink = computed(() => activeOffer.value?.data?.link || '');
 const heroDescription = computed(() => activeOffer.value?.data?.description || '');
 
-// Env colors
-const config = useRuntimeConfig();
-const pmGrey = computed(() => String(config.public.pmGrey || '#C8C3C7'));
 </script>
 
 <template>
@@ -74,7 +71,7 @@ const pmGrey = computed(() => String(config.public.pmGrey || '#C8C3C7'));
         />
 
         <!-- Description — 155px ниже кнопки -->
-        <p v-if="heroDescription" class="hero-description" :style="{ color: pmGrey }">
+        <p v-if="heroDescription" class="hero-description">
           {{ heroDescription }}
         </p>
       </div>
@@ -143,7 +140,7 @@ const pmGrey = computed(() => String(config.public.pmGrey || '#C8C3C7'));
   letter-spacing: -0.02em;
   text-transform: uppercase;
   text-align: left;
-  color: var(--pm-grey, #c8c3c7);
+  color: var(--text-primary, #C8C3C7);
   margin: 0;
   font-feature-settings: 'pnum' on, 'lnum' on;
 }
@@ -162,6 +159,7 @@ const pmGrey = computed(() => String(config.public.pmGrey || '#C8C3C7'));
   line-height: 130%;
   font-weight: 500;
   text-align: left;
+  color: var(--text-primary, #C8C3C7);
 
   @media (max-width: 768px) {
     max-width: 100%;

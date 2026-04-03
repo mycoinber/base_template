@@ -24,16 +24,12 @@ const authorAvatar = computed(() => {
 
 const hasAuthor = computed(() => Boolean(authorName.value));
 
-const config = useRuntimeConfig();
-const pmYellow = computed(() => String(config.public.pmYellow || '#F8FF13'));
-const pmGrey = computed(() => String(config.public.pmGrey || '#C8C3C7'));
-const pmBlack = computed(() => String(config.public.pmBlack || '#000000'));
 </script>
 
 <template>
   <section v-if="hasAuthor" class="author-bar-section">
     <div class="container">
-      <div class="author-bar" :style="{ backgroundColor: pmYellow }">
+      <div class="author-bar">
 
         <!-- Avatar: отступ 3px сверху/снизу/слева -->
         <div class="author-bar__avatar">
@@ -49,8 +45,8 @@ const pmBlack = computed(() => String(config.public.pmBlack || '#000000'));
 
         <!-- Name + Role -->
         <div class="author-bar__info">
-          <b class="author-bar__name" :style="{ color: pmBlack }">{{ authorName }}</b>
-          <div class="author-bar__role" :style="{ color: pmGrey }">{{ authorRole }}</div>
+          <b class="author-bar__name">{{ authorName }}</b>
+          <div class="author-bar__role">{{ authorRole }}</div>
         </div>
 
         <!-- Social icons: youtube, inst, tiktok — из public/icon/24 -->
@@ -85,7 +81,8 @@ const pmBlack = computed(() => String(config.public.pmBlack || '#000000'));
   position: relative;
   font-family: 'Parimatch Sans', sans-serif;
   font-size: 14px;
-  color: #000;
+  color: var(--text-inverse, #000000);
+  background: var(--primary, #F8FF13);
   padding: 0;
 
   @media (max-width: 640px) {
@@ -140,6 +137,7 @@ const pmBlack = computed(() => String(config.public.pmBlack || '#000000'));
   font-size: 14px;
   line-height: 130%;
   display: block;
+  color: var(--text-secondary, #9a9a9a);
 }
 
 /* Social icons — gap: 6px, отступ от правого края 32px, сверху 13px, снизу 12px */

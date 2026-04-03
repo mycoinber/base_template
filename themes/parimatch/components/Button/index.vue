@@ -44,17 +44,17 @@ const buttonRel = computed(() => props.data?.rel || '');
 
 // Классы в зависимости от варианта
 const variantClasses = computed(() => {
-  const base = "font-font-02 font-bold text-center uppercase relative hover:brightness-95 transition-all duration-200 cursor-pointer inline-flex items-center justify-center";
+  const base = "theme-button theme-button-base font-font-02 font-bold text-center uppercase relative transition-all duration-200 cursor-pointer inline-flex items-center justify-center";
 
   switch (props.variant) {
     case 'primary':
-      return `${base} bg-color-01 text-white`;
+      return `${base} theme-button--primary`;
     case 'secondary':
-      return `${base} bg-color-02 text-white`;
+      return `${base} theme-button--secondary`;
     case 'tertiary':
-      return `${base} btn-tertiary`;
+      return `${base} theme-button--tertiary`;
     default:
-      return `${base} bg-color-01 text-white`;
+      return `${base} theme-button--primary`;
   }
 });
 
@@ -86,9 +86,7 @@ const finalClasses = computed(() => `${variantClasses.value} ${sizeClasses.value
 </template>
 
 <style lang="scss">
-.btn-tertiary {
-  background-color: var(--color-primary, #F8FF13);
-  color: var(--color-text-inverse, #000000);
+.theme-button-base {
   font-family: 'Parimatch Sans', sans-serif;
   font-weight: 700;
   font-size: 14px;
@@ -98,11 +96,26 @@ const finalClasses = computed(() => `${variantClasses.value} ${sizeClasses.value
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  text-decoration: none;
   transition: filter 0.2s;
 
   &:hover {
     filter: brightness(0.95);
   }
 }
-</style>
 
+.theme-button--primary {
+  background-color: var(--primary, #F8FF13);
+  color: var(--text-inverse, #000000);
+}
+
+.theme-button--secondary {
+  background-color: var(--secondary, #e00840);
+  color: var(--text-contrast, #ffffff);
+}
+
+.theme-button--tertiary {
+  background-color: var(--primary, #F8FF13);
+  color: var(--text-inverse, #000000);
+}
+</style>

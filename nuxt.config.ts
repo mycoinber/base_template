@@ -165,9 +165,12 @@ export default defineNuxtConfig({
       colorBgPrimary:      process.env.NUXT_PUBLIC_COLOR_BG_PRIMARY     || '',
       colorBgSecondary:    process.env.NUXT_PUBLIC_COLOR_BG_SECONDARY   || '',
       colorTextPrimary:    process.env.NUXT_PUBLIC_COLOR_TEXT_PRIMARY   || '',
+      colorTextSecondary:  process.env.NUXT_PUBLIC_COLOR_TEXT_SECONDARY || '',
       colorTextHeading:    process.env.NUXT_PUBLIC_COLOR_TEXT_HEADING   || '',
       colorTextInverse:    process.env.NUXT_PUBLIC_COLOR_TEXT_INVERSE   || '',
+      colorTextContrast:   process.env.NUXT_PUBLIC_COLOR_TEXT_CONTRAST  || '',
       colorBorder:         process.env.NUXT_PUBLIC_COLOR_BORDER         || '',
+      colorStateHover:     process.env.NUXT_PUBLIC_COLOR_STATE_HOVER    || '',
     },
     server: {
       siteId: SITE_ID,

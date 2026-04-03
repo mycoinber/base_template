@@ -21,9 +21,12 @@ export default defineNuxtPlugin(() => {
     ['--background-primary',   get('colorBgPrimary')],
     ['--background-secondary', get('colorBgSecondary')],
     ['--text-primary',         get('colorTextPrimary')],
+    ['--text-secondary',       get('colorTextSecondary')],
     ['--text-heading',         get('colorTextHeading')],
     ['--text-inverse',         get('colorTextInverse')],
+    ['--text-contrast',        get('colorTextContrast')],
     ['--border-default',       get('colorBorder')],
+    ['--state-hover',          get('colorStateHover')],
   ]
 
   const root = document.documentElement

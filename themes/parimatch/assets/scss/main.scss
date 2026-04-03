@@ -29,8 +29,10 @@
 
   /* Text Colors */
   --text-primary: #{tokens.get-color('text', 'primary')};
+  --text-secondary: #{tokens.get-color('text', 'secondary')};
   --text-heading: #{tokens.get-color('text', 'heading')};
   --text-inverse: #{tokens.get-color('text', 'inverse')};
+  --text-contrast: #ffffff;
 
   /* Border Colors */
   --border-default: #{tokens.get-color('border', 'default')};
@@ -60,8 +62,11 @@
   --color-01: var(--secondary);
   --color-02: var(--accent);
   --color-03: var(--primary);
+  --color-primary: var(--primary);
+  --color-text-inverse: var(--text-inverse);
   --pm-yellow: var(--primary);
   --pm-grey: var(--text-primary);
+  --bg-primary: var(--background-primary);
   --border: var(--border-default);
   --font-01: var(--font-primary);
   --font-02: var(--font-heading);
@@ -264,4 +269,3 @@
     border: 1px solid black;
   }
 }
-

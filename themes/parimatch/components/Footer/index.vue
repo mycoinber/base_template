@@ -130,7 +130,7 @@ const currentYear = new Date().getFullYear();
                 v-for="link in leftColumn"
                 :key="link.slug"
                 :to="`/${link.slug}`"
-                class="text-[#c8c3c7] font-medium hover:text-white transition-colors duration-200"
+                class="theme-footer-link font-medium transition-colors duration-200"
               >
                 {{ link.name }}
               </NuxtLink>
@@ -142,7 +142,7 @@ const currentYear = new Date().getFullYear();
                 v-for="link in rightColumn"
                 :key="link.slug"
                 :to="`/${link.slug}`"
-                class="text-[#c8c3c7] font-medium hover:text-white transition-colors duration-200"
+                class="theme-footer-link font-medium transition-colors duration-200"
               >
                 {{ link.name }}
               </NuxtLink>
@@ -198,10 +198,10 @@ const currentYear = new Date().getFullYear();
           &copy; Copyright {{ currentYear }}. {{ siteTitle }}
         </span>
         <div class="flex items-center gap-4">
-          <NuxtLink to="/privacy-policy" class="text-pm-grey font-medium hover:text-white transition-colors duration-200">
+          <NuxtLink to="/privacy-policy" class="theme-footer-link font-medium transition-colors duration-200">
             Privacy Policy
           </NuxtLink>
-          <NuxtLink to="/terms-of-use" class="text-pm-grey font-medium hover:text-white transition-colors duration-200">
+          <NuxtLink to="/terms-of-use" class="theme-footer-link font-medium transition-colors duration-200">
             Terms of Use
           </NuxtLink>
         </div>
@@ -210,3 +210,13 @@ const currentYear = new Date().getFullYear();
     </div>
   </footer>
 </template>
+
+<style scoped lang="scss">
+.theme-footer-link {
+  color: var(--text-primary, #C8C3C7);
+
+  &:hover {
+    color: var(--text-contrast, #ffffff);
+  }
+}
+</style>
