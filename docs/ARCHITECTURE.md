@@ -87,6 +87,7 @@ Theme:
 - visual components
 - design tokens
 - theme SCSS and Tailwind preset
+- env-driven color application through `plugins/theme-colors.client.ts`
 
 ## Env Contract
 
@@ -120,6 +121,18 @@ Optional theme repainting:
 4. Set `ACTIVE_THEME=<name>` in `.env`
 5. Restart dev/build
 
+## What Is Already Done
+
+- the canonical frontend runtime no longer goes through top-level legacy `components/*` and `composables/*`
+- theme selection is resolved from `.env` via `ACTIVE_THEME`
+- theme color overrides are injected from `.env` into CSS variables via `plugins/theme-colors.client.ts`
+- desktop header is aligned to a fixed logo asset at `public/icon/logo.svg`
+- gallery layout can switch from wrapped desktop cards to a horizontal carousel when the available desktop width is insufficient
+
 ## Current Limitation
 
-The architecture now supports many themes structurally, but only registered themes can be activated, and each running app instance still uses one selected theme at a time.
+The architecture now supports many themes structurally, but some limits still remain:
+- only registered themes can be activated
+- each running app instance still uses one selected theme at a time
+- only `parimatch` is validated in practice
+- some fallback colors still live in SCSS tokens/styles as defaults behind the env-driven variables

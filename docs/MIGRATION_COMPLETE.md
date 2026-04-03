@@ -6,7 +6,7 @@ The frontend runtime is consolidated around the new architecture:
 - routes: `pages/index.vue` and `pages/[...slug].vue`
 - core logic: `core/composables/*`
 - document/head setup: `core/composables/usePageDocument.ts`
-- UI layer: `themes/parimatch/*`
+- UI layer: `themes/<active-theme>/*`
 - backend integration: Nitro routes under `server/api/*`
 
 The old top-level runtime folders `components/*` and `composables/*` have been removed.
@@ -19,6 +19,10 @@ The transition file `pages/[...slug]-new.vue` has also been removed.
 - the canonical catch-all route is now only `pages/[...slug].vue`
 - top-level legacy frontend folders were removed from runtime
 - Tailwind content scanning was aligned with the new structure
+- active theme selection was moved to `.env` via `ACTIVE_THEME`
+- theme color overrides were moved to `NUXT_PUBLIC_COLOR_*`
+- desktop header uses a fixed logo asset from `public/icon/logo.svg`
+- gallery can switch to a carousel layout when offers do not fit the available desktop width
 
 ## Current Structure
 
@@ -53,6 +57,8 @@ The transition file `pages/[...slug]-new.vue` has also been removed.
 
 The repository is cleaner, but not yet at the final ideal state:
 - only one active theme is validated in practice: `parimatch`
+- some theme fallback values still remain in SCSS token/style files
+- theme selection is build/deploy-time, not an in-browser runtime theme switcher
 - some documents intentionally remain as migration history rather than current architecture reference
 
 ## Source Of Truth

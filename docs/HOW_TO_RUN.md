@@ -91,6 +91,8 @@ The current theme layer expects these semantic color keys when you want full rep
 - active theme is selected in `theme.config.ts` from `ACTIVE_THEME`
 - `/api/pages` and `/api/nav` proxy requests to backend services
 - `pages/[...slug].vue` is the canonical catch-all page route
+- desktop header currently uses `/icon/logo.svg`
+- gallery falls back to horizontal carousel behavior when desktop width is not enough for all cards in one row
 
 ## Adding A New Theme
 
@@ -103,3 +105,9 @@ The current theme layer expects these semantic color keys when you want full rep
 ## Notes
 
 - `docs/MIGRATION.md` is a historical migration plan, not the current source of truth
+
+## What Is Still Not Done
+
+- only `parimatch` is validated end-to-end as a real theme
+- some theme defaults still exist in SCSS token files as fallbacks
+- theme selection is deployment-level, not a live runtime switcher for one browser session
