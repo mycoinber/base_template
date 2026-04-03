@@ -1,0 +1,267 @@
+/**
+ * Parimatch Theme - Main SCSS
+ * Основные стили темы с использованием Design Tokens
+ */
+
+// Sass built-in modules
+@use 'sass:map';
+@use 'sass:meta';
+
+// Импорт токенов (новый синтаксис)
+@use './tokens' as tokens;
+
+// Импорт компонентов (все @use должны быть вверху файла)
+@use './components' as components;
+
+// ============================================================================
+// CSS Variables Definition
+// ============================================================================
+
+:root {
+  /* Color Tokens */
+  --primary: #{tokens.get-color('primary')};
+  --secondary: #{tokens.get-color('secondary')};
+  --accent: #{tokens.get-color('accent')};
+
+  /* Background Colors */
+  --background-primary: #{tokens.get-color('background', 'primary')};
+  --background-secondary: #{tokens.get-color('background', 'secondary')};
+
+  /* Text Colors */
+  --text-primary: #{tokens.get-color('text', 'primary')};
+  --text-heading: #{tokens.get-color('text', 'heading')};
+  --text-inverse: #{tokens.get-color('text', 'inverse')};
+
+  /* Border Colors */
+  --border-default: #{tokens.get-color('border', 'default')};
+
+  /* State Colors */
+  --state-hover: #{tokens.get-color('state', 'hover')};
+  --state-active: #{tokens.get-color('state', 'active')};
+  --state-disabled: #{tokens.get-color('state', 'disabled')};
+
+  /* Typography */
+  --font-primary: #{tokens.typo('fontFamily', 'primary')};
+  --font-heading: #{tokens.typo('fontFamily', 'heading')};
+
+  /* Dark Mode Colors */
+  --primary-dark: #D4E800;
+  --background-dark: #0a0a0a;
+  --background-secondary-dark: #1a1a1a;
+  --text-primary-dark: #e0e0e0;
+  --text-inverse-dark: #000000;
+  --border-dark: #333333;
+
+  /* Legacy Variables (for backward compatibility) */
+  --background-01: var(--background-primary);
+  --background-02: var(--background-secondary);
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-01: var(--secondary);
+  --color-02: var(--accent);
+  --color-03: var(--primary);
+  --pm-yellow: var(--primary);
+  --pm-grey: var(--text-primary);
+  --border: var(--border-default);
+  --font-01: var(--font-primary);
+  --font-02: var(--font-heading);
+}
+
+// ============================================================================
+// Theme-specific Global Styles
+// ============================================================================
+
+// Typography scale using design tokens
+@each $size, $value in map.get(tokens.$typography, 'fontSize') {
+  .text-#{$size} {
+    font-size: #{$value};
+  }
+}
+
+// Weight utilities using design tokens
+@each $weight, $value in map.get(tokens.$typography, 'fontWeight') {
+  .font-#{$weight} {
+    font-weight: #{$value};
+  }
+}
+
+// Line height utilities
+@each $height, $value in map.get(tokens.$typography, 'lineHeight') {
+  .leading-#{$height} {
+    line-height: #{$value};
+  }
+}
+
+// Letter spacing utilities
+@each $spacing, $value in map.get(tokens.$typography, 'letterSpacing') {
+  .tracking-#{$spacing} {
+    letter-spacing: #{$value};
+  }
+}
+
+// ============================================================================
+// Theme Component Utilities
+// ============================================================================
+
+// Container utility
+.container {
+  @include tokens.parimatch-container();
+}
+
+// Button base styles (theme-specific)
+.theme-button {
+  @include tokens.button-style();
+
+  &--primary {
+    @include tokens.button-style('primary');
+  }
+
+  &--secondary {
+    @include tokens.button-style('secondary');
+  }
+
+  &--tertiary {
+    @include tokens.button-style('outline');
+  }
+}
+
+// Card component base
+.theme-card {
+  @include tokens.card-style();
+}
+
+// ============================================================================
+// Animation Utilities
+// ============================================================================
+
+// Theme-specific animations
+@keyframes theme-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes theme-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.theme-animate-fade-in {
+  animation: theme-fade-in 0.3s ease-out;
+}
+
+.theme-animate-slide-in {
+  animation: theme-slide-in 0.3s ease-out;
+}
+
+// ============================================================================
+// Responsive Utilities
+// ============================================================================
+
+// Mobile-first breakpoints using theme tokens
+@include tokens.mobile('sm') {
+  .mobile\:hidden {
+    display: none;
+  }
+
+  .mobile\:text-sm {
+    font-size: tokens.typo('fontSize', 'sm');
+  }
+}
+
+@include tokens.responsive('md') {
+  .tablet\:block {
+    display: block;
+  }
+}
+
+@include tokens.responsive('lg') {
+  .desktop\:text-lg {
+    font-size: tokens.typo('fontSize', 'lg');
+  }
+}
+
+// ============================================================================
+// Dark Mode Support (if enabled)
+// ============================================================================
+
+/* Темный режим через класс .dark-mode */
+.dark-mode {
+  --primary: var(--primary-dark, #D4E800);
+  --background-primary: var(--background-dark, #0a0a0a);
+  --background-secondary: var(--background-secondary-dark, #1a1a1a);
+  --text-primary: var(--text-primary-dark, #e0e0e0);
+  --text-inverse: var(--text-inverse-dark, #000000);
+  --border-default: var(--border-dark, #333333);
+}
+
+/* Системная настройка темного режима */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light-mode) {
+    --primary: #D4E800;
+    --background-primary: #0a0a0a;
+    --background-secondary: #1a1a1a;
+    --text-primary: #e0e0e0;
+    --text-inverse: #000000;
+    --border-default: #333333;
+  }
+}
+
+// ============================================================================
+// High Contrast Mode
+// ============================================================================
+
+@media (prefers-contrast: more) {
+  :root {
+    --background-primary: #000000;
+    --background-secondary: #1a1a1a;
+    --text-primary: #ffffff;
+    --border-default: #ffffff;
+  }
+}
+
+// ============================================================================
+// Reduced Motion
+// ============================================================================
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-animate-fade-in,
+  .theme-animate-slide-in,
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+// ============================================================================
+// Print Styles
+// ============================================================================
+
+@media print {
+  :root {
+    --background-primary: white;
+    --text-primary: black;
+    --primary: black;
+  }
+
+  .theme-card {
+    border: 1px solid black;
+  }
+
+  .theme-button {
+    border: 1px solid black;
+  }
+}
+

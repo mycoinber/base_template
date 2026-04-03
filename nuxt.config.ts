@@ -1,14 +1,54 @@
-import { readFileSync } from "fs";
 import { resolve } from "path";
 import {
   SITE_ID,
   SITEMAP_API_BASE,
   BACKEND_BASE_URL,
 } from "./utils/remote-sitemap";
+import { activeTheme } from "./theme.config";
 
 export default defineNuxtConfig({
   devtools: { enabled: false },
   ssr: true,
+
+  // Расширение темой как Nuxt Layer (компоненты, layouts, composables темы будут приоритетнее)
+  extends: [
+    `./themes/${activeTheme}`,
+  ],
+
+  // Алиасы для новой архитектуры
+  alias: {
+    '@core': resolve(__dirname, './core'),
+    '@theme': resolve(__dirname, `./themes/${activeTheme}`),
+    '@shared': resolve(__dirname, './shared'),
+  },
+
+  // Конфигурация компонентов: приоритет темы > core > базовые
+  components: [
+    // 1. Компоненты активной темы с префиксом Theme (наивысший приоритет)
+    {
+      path: `~/themes/${activeTheme}/components`,
+      pathPrefix: false,
+      prefix: 'Theme',
+      priority: 10,
+    },
+    // 2. Core компоненты (headless)
+    {
+      path: '~/core/components',
+      pathPrefix: false,
+      prefix: 'Headless',
+      priority: 5,
+    },
+    // 3. Базовые компоненты (fallback, низкий приоритет)
+    {
+      path: '~/components',
+      pathPrefix: false,
+      priority: 0,
+    },
+  ],
+
+  // Директория layouts (приоритет темы через extends)
+  // Layouts из темы будут использоваться благодаря extends ниже
+
   routeRules: {
     // Статические файлы не должны обрабатываться как страницы
     '/ornament.svg': { prerender: true },
@@ -22,8 +62,13 @@ export default defineNuxtConfig({
     // Остальные страницы используют ISR
     "/**": { isr: 7200 },
   },
-  css: ["~/assets/css/tailwind.css", "~/assets/scss/main.scss"],
+  css: [
+    "~/assets/scss/main.scss",
+    "~/assets/css/tailwind.css",
+    // Стили темы подключаются автоматически через extends
+  ],
   modules: [
+    "@pinia/nuxt",
     "@nuxt/image-edge",
     "@nuxt/icon",
     "@nuxtjs/google-fonts",
@@ -96,12 +141,38 @@ export default defineNuxtConfig({
       },
     },
   },
+
+  // TypeScript конфигурация - отключена для dev режима
+  // typescript: {
+  //   strict: true,
+  //   typeCheck: false,
+  // },
+
+  // PostCSS конфигурация (перемещено из postcss.config.js)
+  postcss: {
+    plugins: {
+      tailwindcss: {},
+      autoprefixer: {},
+    },
+  },
+
   runtimeConfig: {
     public: {
       siteId: SITE_ID,
+      activeTheme: activeTheme,
       mediaStorageUrl: process.env.MEDIA_STORAGE_URL,
       sitemapApiBase: SITEMAP_API_BASE,
       backHost: BACKEND_BASE_URL || undefined,
+      // Theme color overrides from .env (NUXT_PUBLIC_COLOR_*)
+      colorPrimary:        process.env.NUXT_PUBLIC_COLOR_PRIMARY        || '',
+      colorSecondary:      process.env.NUXT_PUBLIC_COLOR_SECONDARY      || '',
+      colorAccent:         process.env.NUXT_PUBLIC_COLOR_ACCENT         || '',
+      colorBgPrimary:      process.env.NUXT_PUBLIC_COLOR_BG_PRIMARY     || '',
+      colorBgSecondary:    process.env.NUXT_PUBLIC_COLOR_BG_SECONDARY   || '',
+      colorTextPrimary:    process.env.NUXT_PUBLIC_COLOR_TEXT_PRIMARY   || '',
+      colorTextHeading:    process.env.NUXT_PUBLIC_COLOR_TEXT_HEADING   || '',
+      colorTextInverse:    process.env.NUXT_PUBLIC_COLOR_TEXT_INVERSE   || '',
+      colorBorder:         process.env.NUXT_PUBLIC_COLOR_BORDER         || '',
     },
     server: {
       siteId: SITE_ID,
@@ -110,7 +181,11 @@ export default defineNuxtConfig({
       sitemapApiBase: SITEMAP_API_BASE,
     },
   },
-  plugins: ["~/plugins/vue-query.ts"],
+  plugins: [
+    "~/plugins/vue-query.ts",
+    "~/plugins/theme-resolver.client.ts",
+    "~/plugins/theme-colors.client.ts",
+  ],
   image: {
     provider: "mediaProxy",
     dir: "public",

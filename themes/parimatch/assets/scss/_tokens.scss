@@ -1,0 +1,272 @@
+/**
+ * Parimatch Theme - Design Tokens as SCSS Variables
+ * Конвертация Design Tokens в SCSS переменные с использованием современного синтаксиса
+ */
+
+@use 'sass:map';
+@use 'sass:meta';
+
+// ============================================================================
+// Colors
+// ============================================================================
+
+$colors: (
+  'primary': #F8FF13,
+  'secondary': #e00840,
+  'accent': #2b8ef9,
+  'background': (
+    'primary': #000000,
+    'secondary': #2d3345,
+  ),
+  'text': (
+    'primary': #C8C3C7,
+    'heading': #F8FF13,
+    'inverse': #000000,
+  ),
+  'border': (
+    'default': #545969,
+  ),
+  'state': (
+    'hover': #FFE500,
+    'active': #F8FF13,
+    'disabled': #545969,
+  ),
+);
+
+// ============================================================================
+// Typography
+// ============================================================================
+
+$typography: (
+  'fontFamily': (
+    'primary': "'ParimatchSans', sans-serif",
+    'heading': "'ParimatchSans', sans-serif",
+  ),
+  'fontSize': (
+    'xs': 0.75rem,      // 12px
+    'sm': 0.875rem,     // 14px
+    'base': 1.125rem,   // 18px - базовый текст (обычный текст из Figma)
+    'lg': 1.25rem,      // 20px
+    'xl': 1.5rem,       // 24px
+    '2xl': 2rem,        // 32px
+    '3xl': 3.125rem,    // 50px - заголовки H1 из Figma
+  ),
+  'fontWeight': (
+    'regular': 400,
+    'medium': 500,      // обычный текст из Figma
+    'semibold': 600,
+    'bold': 700,        // заголовки из Figma
+    'black': 900,
+  ),
+  'lineHeight': (
+    'tight': 0.8,       // 80% - для заголовков из Figma
+    'normal': 1.3,      // 130% - для обычного текста из Figma
+    'relaxed': 1.5,     // 150%
+  ),
+  'letterSpacing': (
+    'tight': -0.02em,   // -2% для заголовков из Figma
+    'normal': 0,        // 0% для обычного текста из Figma
+    'wide': 0.02em,
+  ),
+);
+
+// ============================================================================
+// Spacing
+// ============================================================================
+
+$spacing: (
+  '0': 0,
+  '1': 0.25rem,   // 4px
+  '2': 0.5rem,    // 8px
+  '3': 0.75rem,   // 12px
+  '4': 1rem,      // 16px
+  '5': 1.25rem,   // 20px
+  '6': 1.5rem,    // 24px
+  '8': 2rem,      // 32px
+  '10': 2.5rem,   // 40px
+  '12': 3rem,     // 48px
+  '16': 4rem,     // 64px
+);
+
+// ============================================================================
+// Breakpoints
+// ============================================================================
+
+$breakpoints: (
+  'xs': 320px,
+  'sm': 640px,
+  'md': 768px,
+  'lg': 1024px,
+  'xl': 1280px,
+  '2xl': 1440px,
+);
+
+// ============================================================================
+// Border Radius
+// ============================================================================
+
+$borderRadius: (
+  'none': 0,
+  'sm': 0.25rem,     // 4px
+  'md': 0.5rem,      // 8px
+  'lg': 0.625rem,    // 10px
+  'xl': 1rem,        // 16px
+  'full': 9999px,    // circle
+);
+
+// ============================================================================
+// Shadows
+// ============================================================================
+
+$shadows: (
+  'none': none,
+  'sm': 0 1px 2px 0 rgb(0 0 0 / 0.05),
+  'md': 0 4px 6px -1px rgb(0 0 0 / 0.1),
+  'lg': 0 10px 15px -3px rgb(0 0 0 / 0.1),
+  'xl': 0 20px 25px -5px rgb(0 0 0 / 0.1),
+);
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+// Get color function (переименовано для избежания конфликта с встроенной color())
+@function get-color($name, $shade: null) {
+  $color-map: map.get($colors, $name);
+
+  @if $shade and meta.type-of($color-map) == 'map' {
+    @return map.get($color-map, $shade);
+  }
+
+  @return $color-map;
+}
+
+// Get typography function
+@function typo($category, $property) {
+  $category-map: map.get($typography, $category);
+  @return map.get($category-map, $property);
+}
+
+// Get spacing function
+@function space($size) {
+  @return map.get($spacing, $size);
+}
+
+// Get breakpoint function
+@function breakpoint($size) {
+  @return map.get($breakpoints, $size);
+}
+
+// ============================================================================
+// Mixins
+// ============================================================================
+
+// Typography mixing
+@mixin font-style($size: 'base', $weight: 'regular', $line-height: 'normal') {
+  font-size: typo('fontSize', $size);
+  font-weight: typo('fontWeight', $weight);
+  line-height: typo('lineHeight', $line-height);
+}
+
+// Button mixin
+@mixin button-style($variant: 'primary') {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: typo('fontWeight', 'medium');
+  border-radius: map.get($borderRadius, 'md');
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  text-transform: uppercase;
+
+  font-family: typo('fontFamily', 'heading');
+
+  @if $variant == 'primary' {
+    background: get-color('primary');
+    color: get-color('text', 'inverse');
+
+    &:hover:not(:disabled) {
+      background: get-color('state', 'hover');
+    }
+  } @else if $variant == 'secondary' {
+    background: get-color('secondary');
+    color: #ffffff;
+
+    &:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+  } @else if $variant == 'outline' {
+    background: transparent;
+    border: 2px solid get-color('primary');
+    color: get-color('primary');
+
+    &:hover:not(:disabled) {
+      background: get-color('primary');
+      color: get-color('text', 'inverse');
+    }
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  &:focus-visible {
+    outline: 2px solid get-color('primary');
+    outline-offset: 2px;
+  }
+}
+
+// Responsive breakpoint mixin
+@mixin responsive($breakpoint) {
+  @media (min-width: breakpoint($breakpoint)) {
+    @content;
+  }
+}
+
+// Mobile-first responsive mixin
+@mixin mobile($breakpoint) {
+  @media (max-width: breakpoint($breakpoint) - 1px) {
+    @content;
+  }
+}
+
+// Container mixin
+@mixin container($max-width: '2xl', $padding: '4') {
+  width: 100%;
+  max-width: breakpoint($max-width);
+  margin: 0 auto;
+  padding-left: space($padding);
+  padding-right: space($padding);
+
+  @include mobile('md') {
+    padding-left: space('2');
+    padding-right: space('2');
+  }
+}
+
+// Parimatch specific container (80% width)
+@mixin parimatch-container() {
+  padding: 0 1rem;
+  margin: 0 auto;
+  width: 80%;
+  max-width: 100%;
+
+  @include mobile('sm') {
+    width: 100%;
+  }
+}
+
+// Card mixin
+@mixin card-style($padding: '6') {
+  background: get-color('background', 'secondary');
+  border: 1px solid get-color('border', 'default');
+  border-radius: map.get($borderRadius, 'lg');
+  padding: space($padding);
+
+  &:hover {
+    border-color: get-color('primary');
+  }
+}

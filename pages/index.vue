@@ -1,6 +1,6 @@
 <template>
-  <main>
-    <Main :data="data" />
+  <main class="m-0 p-0">
+    <ThemeMain :data="data" />
   </main>
   <!-- SSR-rendered body code blocks -->
   <div v-for="(code, i) in bodyHtmlCodes" :key="'bh-'+i" v-html="code" />
@@ -11,6 +11,8 @@
 import { useI18n } from "vue-i18n";
 import { manifestToHead } from "~/utils/manifestHead";
 import { dedupeLinks, dedupeMeta, toContentString } from "~/utils/headUtils";
+import { useSeo, usePageData, useSiteManifest } from '@/core/composables';
+import author from "~/components/Main/Author.vue";
 
 const { locale } = useI18n();
 const url = useRequestURL();
@@ -21,10 +23,39 @@ const route = useRoute();
 const siteId = import.meta.server ? config.server.siteId : config.public.siteId;
 const slug = route.params.slug || null;
 
+// Получаем данные страницы через Core composable
 const { data, status, error } = await usePageData(siteId, slug);
 
 if (error.value) {
   throw error.value;
+}
+
+// Синхронизируем offers в shared state → Header/Footer читают оттуда
+const sharedOffers = useState('pageOffers', () => []);
+watch(() => data.value?.offers, (offers) => {
+  if (Array.isArray(offers)) sharedOffers.value = offers;
+}, { immediate: true });
+
+// Синхронизируем author в shared state → Footer читает оттуда
+const sharedAuthor = useState('pageAuthor', () => null);
+watch(() => data.value?.author, (author) => {
+  if (author) sharedAuthor.value = author;
+}, { immediate: true });
+
+// Используем Core SEO composable для structured data
+const { structuredData, canonicalUrl, pageTitle } = useSeo(data, {
+  generateStructuredData: true,
+  includeOpenGraph: true,
+  includeTwitter: true,
+  includeBreadcrumbs: true,
+  includeFAQ: true,
+});
+
+// Log structured data in development
+if (process.dev) {
+  watch(() => structuredData.value, (schemas) => {
+    console.info('[HomePage] Structured data:', schemas);
+  }, { immediate: true });
 }
 
 const { data: siteManifestRaw } = await useSiteManifest();

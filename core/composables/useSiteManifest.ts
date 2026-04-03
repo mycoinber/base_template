@@ -1,0 +1,432 @@
+/**
+ * Core useSiteManifest Composable
+ * ============================================================================
+ *
+ * Headless site manifest management для PBN Template System.
+ *
+ * Этот composable является частью Core Layer и отвечает за:
+ * - Загрузку site-manifest.json (SSR и client)
+ * - Кэширование manifest данных
+ * - Предоставление computed helper'ов для часто используемых полей
+ * - Валидацию и нормализацию manifest данных
+ *
+ * Theme Layer использует этот composable для получения:
+ * - Favicon, Logo, Site Title
+ * - Domain, Description
+ * - Assets и metadata
+ *
+ * @example
+ * ```typescript
+ * // В layout или компоненте темы:
+ * const {
+ *   data: manifest,
+ *   favicon,
+ *   logo,
+ *   title
+ * } = await useSiteManifest();
+ * ```
+ */
+
+import { computed, type Ref, type ComputedRef } from 'vue';
+import type { WebsiteManifestPayload, ArticleImage } from '@/core/types/page';
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+const MANIFEST_STATE_KEY = 'siteManifest';
+const MANIFEST_FILE_NAME = 'site-manifest.json';
+const MANIFEST_LOADING_KEY = 'siteManifestLoading';
+const MANIFEST_ERROR_KEY = 'siteManifestError';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+/**
+ * Serializable error type for useState (Error objects cannot be serialized by devalue)
+ */
+export interface ManifestError {
+  message: string;
+  code?: string;
+}
+
+/**
+ * Return type для useSiteManifest composable
+ */
+export interface UseSiteManifestReturn {
+  /** Raw manifest data */
+  data: Ref<WebsiteManifestPayload | null>;
+
+  /** Refresh manifest data */
+  refresh: () => Promise<WebsiteManifestPayload | null>;
+
+  /** Loading state */
+  isLoading: Ref<boolean>;
+
+  /** Error state (serializable) */
+  error: Ref<ManifestError | null>;
+
+  // ========================================
+  // Helper computed properties
+  // ========================================
+
+  /** Favicon URL */
+  favicon: ComputedRef<string | null>;
+
+  /** Logo URL or path */
+  logo: ComputedRef<string | null>;
+
+  /** Logo as ArticleImage for theme components */
+  logoImage: ComputedRef<ArticleImage | null>;
+
+  /** Site title */
+  title: ComputedRef<string | null>;
+
+  /** Site description */
+  description: ComputedRef<string | null>;
+
+  /** Site domain */
+  domain: ComputedRef<string | null>;
+
+  /** Site ID */
+  siteId: ComputedRef<string | null>;
+}
+
+// ============================================================================
+// Main Composable
+// ============================================================================
+
+/**
+ * Headless composable для управления site manifest.
+ *
+ * Поддерживает SSR и client-side loading.
+ * Автоматически кэширует данные через useState.
+ */
+export async function useSiteManifest(): Promise<UseSiteManifestReturn> {
+  // Shared state (persists across requests on server, across navigations on client)
+  const manifestState = useState<WebsiteManifestPayload | null>(
+    MANIFEST_STATE_KEY,
+    () => null
+  );
+
+  const isLoading = useState<boolean>(MANIFEST_LOADING_KEY, () => false);
+  const error = useState<ManifestError | null>(MANIFEST_ERROR_KEY, () => null);
+
+  // ========================================
+  // Helper Computed Properties
+  // ========================================
+
+  const favicon = computed<string | null>(() => {
+    return manifestState.value?.favicon || null;
+  });
+
+  const logo = computed<string | null>(() => {
+    return manifestState.value?.logo || null;
+  });
+
+  const logoImage = computed<ArticleImage | null>(() => {
+    const logoUrl = manifestState.value?.logo;
+    if (!logoUrl) return null;
+
+    return {
+      path: logoUrl,
+      alt: manifestState.value?.title || 'Site Logo',
+    };
+  });
+
+  const title = computed<string | null>(() => {
+    return manifestState.value?.title || null;
+  });
+
+  const description = computed<string | null>(() => {
+    return manifestState.value?.description || null;
+  });
+
+  const domain = computed<string | null>(() => {
+    return manifestState.value?.domain || null;
+  });
+
+  const siteId = computed<string | null>(() => {
+    return manifestState.value?.siteId || null;
+  });
+
+  // ========================================
+  // Fetch Logic
+  // ========================================
+
+  const fetchManifest = async (): Promise<WebsiteManifestPayload | null> => {
+    try {
+      isLoading.value = true;
+      error.value = null;
+
+      // Server-side: read from disk via Nitro storage
+      if (import.meta.server) {
+        const manifest = await readManifestFromDisk();
+        if (manifest) {
+          manifestState.value = validateManifest(manifest);
+        }
+        return manifestState.value;
+      }
+
+      // Client-side: fetch via HTTP
+      const data = await $fetch<WebsiteManifestPayload>(`/${MANIFEST_FILE_NAME}`);
+
+      if (data) {
+        manifestState.value = validateManifest(data);
+      }
+
+      return manifestState.value;
+    } catch (err) {
+      // Store serializable error (not Error object)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch manifest';
+      error.value = { message: errorMessage, code: 'FETCH_ERROR' };
+
+      if (process.dev) {
+        console.error('[useSiteManifest] Fetch error:', errorMessage);
+      }
+
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  // ========================================
+  // Initial Load
+  // ========================================
+
+  // Only fetch if not already loaded
+  if (manifestState.value === null) {
+    await fetchManifest();
+  }
+
+  // ========================================
+  // Return Interface
+  // ========================================
+
+  return {
+    data: manifestState,
+    refresh: fetchManifest,
+    isLoading,
+    error,
+
+    // Computed helpers
+    favicon,
+    logo,
+    logoImage,
+    title,
+    description,
+    domain,
+    siteId,
+  };
+}
+
+// ============================================================================
+// Server-side Helpers
+// ============================================================================
+
+/**
+ * Read manifest from disk using Nitro storage (server only)
+ */
+async function readManifestFromDisk(): Promise<WebsiteManifestPayload | null> {
+  if (!import.meta.server) {
+    if (process.dev) {
+      console.warn('[useSiteManifest] readManifestFromDisk called on client');
+    }
+    return null;
+  }
+
+  try {
+    // Try to get Nitro storage
+    const nitroApp = typeof useNitroApp === 'function' ? useNitroApp() : null;
+    const storage = (nitroApp as any)?.storage;
+
+    if (!storage) {
+      // Fallback to direct file read on server (avoid HTTP loop)
+      if (process.dev) {
+        console.info('[useSiteManifest] No storage, falling back to direct file read');
+      }
+
+      // Dynamic import for Node.js fs module (server only)
+      const { readFileSync } = await import('node:fs');
+      const { resolve } = await import('node:path');
+
+      try {
+        const publicDir = resolve(process.cwd(), 'public');
+        const manifestPath = resolve(publicDir, MANIFEST_FILE_NAME);
+        const content = readFileSync(manifestPath, 'utf-8');
+        return JSON.parse(content);
+      } catch (fsError) {
+        if (process.dev) {
+          console.warn('[useSiteManifest] Could not read manifest file:', fsError);
+        }
+        return null;
+      }
+    }
+
+    const raw = await storage.getItem(`root:public/${MANIFEST_FILE_NAME}`);
+
+    if (!raw) {
+      if (process.dev) {
+        console.info(`[useSiteManifest] No manifest at root:public/${MANIFEST_FILE_NAME}`);
+      }
+      return null;
+    }
+
+    const text = normalizeRawValue(raw);
+    if (!text) {
+      if (process.dev) {
+        console.warn('[useSiteManifest] Manifest file is empty');
+      }
+      return null;
+    }
+
+    const parsed = JSON.parse(text);
+
+    if (process.dev) {
+      console.info('[useSiteManifest] Loaded manifest from disk');
+    }
+
+    return parsed;
+  } catch (err) {
+    if (process.dev) {
+      console.error('[useSiteManifest] Failed to read manifest from disk:', err);
+    }
+    return null;
+  }
+}
+
+/**
+ * Normalize raw storage value to string
+ */
+function normalizeRawValue(value: unknown): string | null {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Uint8Array) {
+    return new TextDecoder('utf-8').decode(value);
+  }
+
+  if (value instanceof ArrayBuffer) {
+    return new TextDecoder('utf-8').decode(new Uint8Array(value));
+  }
+
+  if (typeof value === 'object' && 'toString' in value) {
+    try {
+      return String(value);
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+// ============================================================================
+// Validation
+// ============================================================================
+
+/**
+ * Validate and normalize manifest data
+ * Returns null for invalid/empty manifests instead of throwing
+ */
+function validateManifest(manifest: any): WebsiteManifestPayload | null {
+  if (!manifest || typeof manifest !== 'object') {
+    if (process.dev) {
+      console.warn('[useSiteManifest] Manifest is not an object');
+    }
+    return null;
+  }
+
+  // Required fields - return null if missing (soft validation)
+  if (!manifest.siteId || typeof manifest.siteId !== 'string' || manifest.siteId.trim() === '') {
+    if (process.dev) {
+      console.warn('[useSiteManifest] Manifest has no valid siteId, skipping');
+    }
+    return null;
+  }
+
+  if (!manifest.title || typeof manifest.title !== 'string' || manifest.title.trim() === '') {
+    if (process.dev) {
+      console.warn('[useSiteManifest] Manifest has no valid title, skipping');
+    }
+    return null;
+  }
+
+  // Return normalized manifest
+  return {
+    siteId: manifest.siteId,
+    title: manifest.title,
+    description: manifest.description || '',
+    domain: manifest.domain || '',
+    favicon: manifest.favicon || null,
+    logo: manifest.logo || null,
+    assets: Array.isArray(manifest.assets) ? manifest.assets : [],
+    metadata: manifest.metadata || {},
+  };
+}
+
+// ============================================================================
+// Utility Functions (exported for use in theme components)
+// ============================================================================
+
+/**
+ * Get asset URL by type from manifest
+ */
+export function getAssetFromManifest(
+  manifest: WebsiteManifestPayload | null,
+  assetType: string
+): string | null {
+  if (!manifest?.assets) return null;
+
+  const asset = manifest.assets.find(a => a.type === assetType);
+  return asset?.url || asset?.path || null;
+}
+
+/**
+ * Get favicon URL from manifest
+ */
+export function getFaviconFromManifest(
+  manifest: WebsiteManifestPayload | null
+): string | null {
+  return manifest?.favicon || getAssetFromManifest(manifest, 'favicon');
+}
+
+/**
+ * Get logo URL from manifest
+ */
+export function getLogoFromManifest(
+  manifest: WebsiteManifestPayload | null
+): string | null {
+  return manifest?.logo || getAssetFromManifest(manifest, 'logo');
+}
+
+/**
+ * Check if manifest is loaded and valid
+ */
+export function isManifestLoaded(
+  manifest: WebsiteManifestPayload | null
+): manifest is WebsiteManifestPayload {
+  return Boolean(manifest?.siteId && manifest?.title);
+}
+
+/**
+ * Get current manifest state without fetching
+ */
+export function getManifestState(): WebsiteManifestPayload | null {
+  return useState<WebsiteManifestPayload | null>(MANIFEST_STATE_KEY, () => null).value;
+}
+
+/**
+ * Clear manifest state (useful for testing or logout)
+ */
+export function clearManifestState(): void {
+  const state = useState<WebsiteManifestPayload | null>(MANIFEST_STATE_KEY, () => null);
+  state.value = null;
+}

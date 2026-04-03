@@ -3,7 +3,7 @@
 @use "./variables/fonts";
 
 html {
-    font-size: 1.111vw; /* base: 1440px (16px at 1440px width) */
+    font-size: 0.833vw;
     scroll-behavior: smooth;
 
     @media (max-width: 541px) {
@@ -30,10 +30,6 @@ body {
     @media (max-width: 541px) {
         width: 100%;
     }
-}
-
-section:nth-child(1) {
-    padding-top: 7rem;
 }
 
 .row {

@@ -3,7 +3,7 @@ import { defineEventHandler, getRouterParam, setHeader, setResponseStatus, creat
 const sanitizePath = (raw: string) => {
   return raw
     .split('/')
-    .map((segment) => decodeURIComponent(segment).replace(/[^\w.\-]/g, ''))
+    .map((segment) => decodeURIComponent(segment).replace(/\.\./g, '').replace(/\0/g, ''))
     .filter(Boolean)
     .join('/');
 };

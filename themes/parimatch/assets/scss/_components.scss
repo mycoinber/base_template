@@ -1,0 +1,230 @@
+/**
+ * Parimatch Theme - Component Styles
+ * Базовые стили для theme компонентов
+ */
+
+@use 'sass:map';
+@use './tokens' as tokens;
+
+// ============================================================================
+// Component Base Styles
+// ============================================================================
+
+// Header component
+.theme-header {
+  background: tokens.get-color('background', 'secondary');
+  border-bottom: 1px solid tokens.get-color('border', 'default');
+
+  .logo {
+    height: 2rem; // 32px
+  }
+
+  .nav-link {
+    @include tokens.font-style('sm', 'medium');
+    color: tokens.get-color('text', 'primary');
+    text-decoration: none;
+
+    &:hover {
+      color: tokens.get-color('primary');
+    }
+
+    &.active {
+      color: tokens.get-color('primary');
+      font-weight: tokens.typo('fontWeight', 'bold');
+    }
+  }
+}
+
+// Footer component
+.theme-footer {
+  background: tokens.get-color('background', 'secondary');
+  border-top: 1px solid tokens.get-color('border', 'default');
+  margin-top: auto;
+
+  .footer-text {
+    @include tokens.font-style('sm', 'regular');
+    color: tokens.get-color('text', 'primary');
+  }
+}
+
+// Hero component
+.theme-hero {
+  @include tokens.card-style();
+
+  .hero-title {
+    @include tokens.font-style('3xl', 'bold', 'tight');
+    color: tokens.get-color('text', 'heading');
+    text-transform: uppercase;
+  }
+
+  .hero-description {
+    @include tokens.font-style('base', 'regular');
+    color: tokens.get-color('text', 'primary');
+  }
+}
+
+// Button component variations
+.theme-button {
+  @include tokens.button-style();
+
+  // Size variations
+  &--sm {
+    padding: tokens.space('2') tokens.space('4');
+    @include tokens.font-style('sm', 'medium');
+  }
+
+  &--md {
+    padding: tokens.space('3') tokens.space('6');
+    @include tokens.font-style('base', 'medium');
+  }
+
+  &--lg {
+    padding: tokens.space('4') tokens.space('8');
+    @include tokens.font-style('lg', 'medium');
+  }
+
+  // Variant styles
+  &--primary {
+    @include tokens.button-style('primary');
+  }
+
+  &--secondary {
+    @include tokens.button-style('secondary');
+  }
+
+  &--outline {
+    background: transparent;
+    border: 2px solid tokens.get-color('primary');
+    color: tokens.get-color('primary');
+
+    &:hover:not(:disabled) {
+      background: tokens.get-color('primary');
+      color: tokens.get-color('text', 'inverse');
+    }
+  }
+}
+
+// Card component
+.theme-card {
+  @include tokens.card-style();
+
+  .card-header {
+    @include tokens.font-style('lg', 'semibold');
+    color: tokens.get-color('text', 'heading');
+    margin-bottom: tokens.space('4');
+  }
+
+  .card-content {
+    @include tokens.font-style('base', 'regular');
+    color: tokens.get-color('text', 'primary');
+  }
+}
+
+
+// Title component
+.theme-title {
+  .title-heading {
+    @include tokens.font-style('3xl', 'bold', 'tight');
+    color: tokens.get-color('text', 'heading');
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .title-description {
+    @include tokens.font-style('base', 'regular');
+    color: tokens.get-color('text', 'primary');
+    text-align: center;
+  }
+}
+
+// ============================================================================
+// Responsive Component Adjustments
+// ============================================================================
+
+@include tokens.responsive('sm') {
+  .theme-hero {
+    .hero-title {
+      @include tokens.font-style('2xl', 'bold');
+    }
+  }
+
+  .theme-title {
+    .title-heading {
+      @include tokens.font-style('2xl', 'bold');
+    }
+  }
+}
+
+@include tokens.responsive('md') {
+  .theme-header {
+    .nav-link {
+      @include tokens.font-style('base', 'medium');
+    }
+  }
+}
+
+// ============================================================================
+// Animation Components
+// ============================================================================
+
+.theme-accordion {
+  .accordion-content {
+    transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  }
+
+  .accordion-trigger {
+    transition: transform 0.2s ease-in-out;
+
+    &.is-open {
+      transform: rotate(45deg);
+    }
+  }
+}
+
+.theme-modal {
+  .modal-backdrop {
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-content {
+    @include tokens.card-style('8');
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: auto;
+  }
+}
+
+// ============================================================================
+// Utility Components
+// ============================================================================
+
+.theme-loader {
+  .spinner {
+    border-color: tokens.get-color('primary');
+    border-right-color: transparent;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.theme-badge {
+  @include tokens.font-style('xs', 'medium');
+  padding: tokens.space('1') tokens.space('2');
+  border-radius: map.get(tokens.$borderRadius, 'full');
+
+  &--primary {
+    background: tokens.get-color('primary');
+    color: tokens.get-color('text', 'inverse');
+  }
+
+  &--secondary {
+    background: tokens.get-color('secondary');
+    color: #ffffff;
+  }
+}

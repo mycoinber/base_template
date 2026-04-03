@@ -99,6 +99,7 @@ const normalizePageResponse = (payload: AnyObject, slug: string | null) => {
       blocks: normalizedBlocks,
     },
     hero: heroImages,
+    offers: Array.isArray(payload.offers) ? payload.offers : [],
   };
 };
 
