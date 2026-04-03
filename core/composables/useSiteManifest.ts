@@ -28,7 +28,7 @@
  */
 
 import { computed, type Ref, type ComputedRef } from 'vue';
-import type { WebsiteManifestPayload, ArticleImage } from '@/core/types/page';
+import type { WebsiteManifestPayload, ArticleImage, SiteAsset } from '@/core/types/page';
 
 // ============================================================================
 // Constants
@@ -118,11 +118,11 @@ export async function useSiteManifest(): Promise<UseSiteManifestReturn> {
   // ========================================
 
   const favicon = computed<string | null>(() => {
-    return manifestState.value?.favicon || null;
+    return manifestState.value?.favicon || getFaviconFromManifest(manifestState.value) || null;
   });
 
   const logo = computed<string | null>(() => {
-    return manifestState.value?.logo || null;
+    return manifestState.value?.logo || getLogoFromManifest(manifestState.value) || null;
   });
 
   const logoImage = computed<ArticleImage | null>(() => {
@@ -344,32 +344,177 @@ function validateManifest(manifest: any): WebsiteManifestPayload | null {
     return null;
   }
 
-  // Required fields - return null if missing (soft validation)
-  if (!manifest.siteId || typeof manifest.siteId !== 'string' || manifest.siteId.trim() === '') {
+  const normalizedSiteId = normalizeManifestSiteId(manifest);
+  if (!normalizedSiteId) {
     if (process.dev) {
       console.warn('[useSiteManifest] Manifest has no valid siteId, skipping');
     }
     return null;
   }
 
-  if (!manifest.title || typeof manifest.title !== 'string' || manifest.title.trim() === '') {
+  const normalizedTitle = normalizeManifestTitle(manifest);
+  if (!normalizedTitle) {
     if (process.dev) {
       console.warn('[useSiteManifest] Manifest has no valid title, skipping');
     }
     return null;
   }
 
+  const normalizedAssets = normalizeManifestAssets(manifest);
+  const normalizedFavicon = normalizeManifestFavicon(manifest);
+  const normalizedLogo = normalizeManifestLogo(manifest);
+
   // Return normalized manifest
   return {
-    siteId: manifest.siteId,
-    title: manifest.title,
-    description: manifest.description || '',
-    domain: manifest.domain || '',
-    favicon: manifest.favicon || null,
-    logo: manifest.logo || null,
-    assets: Array.isArray(manifest.assets) ? manifest.assets : [],
-    metadata: manifest.metadata || {},
+    siteId: normalizedSiteId,
+    title: normalizedTitle,
+    description: normalizeManifestDescription(manifest),
+    domain: normalizeManifestDomain(manifest),
+    favicon: normalizedFavicon,
+    logo: normalizedLogo,
+    assets: normalizedAssets,
+    metadata: normalizeManifestMetadata(manifest),
   };
+}
+
+function normalizeManifestSiteId(manifest: any): string {
+  const candidates = [
+    manifest.siteId,
+    manifest.website,
+    manifest.websiteId,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return '';
+}
+
+function normalizeManifestTitle(manifest: any): string {
+  const meta = manifest.meta && typeof manifest.meta === 'object' ? manifest.meta : {};
+  const metadata = manifest.metadata && typeof manifest.metadata === 'object' ? manifest.metadata : {};
+  const candidates = [
+    manifest.title,
+    metadata.title,
+    meta['application-name'],
+    meta['apple-mobile-web-app-title'],
+    meta.name,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return '';
+}
+
+function normalizeManifestDescription(manifest: any): string {
+  const meta = manifest.meta && typeof manifest.meta === 'object' ? manifest.meta : {};
+  const metadata = manifest.metadata && typeof manifest.metadata === 'object' ? manifest.metadata : {};
+  const candidates = [
+    manifest.description,
+    metadata.description,
+    meta.description,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return '';
+}
+
+function normalizeManifestDomain(manifest: any): string {
+  const metadata = manifest.metadata && typeof manifest.metadata === 'object' ? manifest.metadata : {};
+  const candidates = [
+    manifest.domain,
+    metadata.domain,
+    metadata.baseUrl,
+    metadata.siteUrl,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return '';
+}
+
+function normalizeManifestMetadata(manifest: any): Record<string, any> {
+  const meta = manifest.meta && typeof manifest.meta === 'object' ? manifest.meta : {};
+  const metadata = manifest.metadata && typeof manifest.metadata === 'object' ? manifest.metadata : {};
+
+  return {
+    ...meta,
+    ...metadata,
+  };
+}
+
+function normalizeManifestAssets(manifest: any): SiteAsset[] {
+  const rawAssets = Array.isArray(manifest.assets)
+    ? manifest.assets
+    : Array.isArray(manifest.icons)
+      ? manifest.icons
+      : [];
+
+  return rawAssets
+    .map((asset: any) => {
+      const path = normalizeAssetPath(asset?.path || asset?.url || asset?.s3Url || asset?.href || asset?.fileName);
+      if (!path) return null;
+
+      return {
+        type: String(asset?.type || asset?.rel || 'asset'),
+        url: path,
+        path,
+        size: typeof asset?.size === 'number' ? asset.size : undefined,
+        mimeType: typeof asset?.mimeType === 'string' ? asset.mimeType : typeof asset?.type === 'string' && asset.type.includes('/') ? asset.type : undefined,
+      };
+    })
+    .filter((asset): asset is SiteAsset => Boolean(asset));
+}
+
+function normalizeManifestFavicon(manifest: any): string | null {
+  if (typeof manifest.favicon === 'string' && manifest.favicon.trim()) {
+    return manifest.favicon.trim();
+  }
+
+  const icon = Array.isArray(manifest.icons)
+    ? manifest.icons.find((entry: any) => entry?.rel === 'icon' || String(entry?.fileName || '').includes('favicon'))
+    : null;
+
+  return normalizeAssetPath(icon?.s3Url || icon?.href || icon?.path || icon?.fileName);
+}
+
+function normalizeManifestLogo(manifest: any): string | null {
+  if (typeof manifest.logo === 'string' && manifest.logo.trim()) {
+    return manifest.logo.trim();
+  }
+
+  const metadata = manifest.metadata && typeof manifest.metadata === 'object' ? manifest.metadata : {};
+  const candidates = [metadata.logo, metadata.logoUrl, metadata.brandLogo];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeAssetPath(candidate);
+    if (normalized) return normalized;
+  }
+
+  return null;
+}
+
+function normalizeAssetPath(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed;
 }
 
 // ============================================================================

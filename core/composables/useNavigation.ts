@@ -51,6 +51,10 @@ export async function useNavigation(
   const nuxtApp = useNuxtApp();
   const route = useRoute();
   const $axios = (nuxtApp as any).$axios as AxiosInstance;
+  const runtimeConfig = useRuntimeConfig();
+  const resolvedSiteId = siteId
+    || (import.meta.server ? runtimeConfig.server.siteId : runtimeConfig.public.siteId)
+    || undefined;
 
   if (!$axios) {
     console.warn('[useNavigation] $axios is not available');
@@ -72,7 +76,7 @@ export async function useNavigation(
 
   // Fetch navigation data
   const fetchNavigation = async (): Promise<void> => {
-    if (!siteId && !import.meta.server) {
+    if (!resolvedSiteId && !import.meta.server) {
       if (process.dev) {
         console.warn('[useNavigation] No siteId provided');
       }
@@ -84,11 +88,11 @@ export async function useNavigation(
       error.value = null;
 
       if (process.dev) {
-        console.info(`[useNavigation] Fetching navigation for site: ${siteId}`);
+        console.info(`[useNavigation] Fetching navigation for site: ${resolvedSiteId || 'runtime-config'}`);
       }
 
       const response = await $axios.get('/nav', {
-        params: siteId ? { siteId } : undefined,
+        params: resolvedSiteId ? { siteId: resolvedSiteId } : undefined,
       });
 
       const navData = response.data;

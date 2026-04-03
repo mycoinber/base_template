@@ -96,6 +96,8 @@ export interface SeoOptions {
   titleTemplate?: string;
   /** Custom title separator */
   titleSeparator?: string;
+  /** Apply head tags automatically via useHead */
+  applyHead?: boolean;
 }
 
 export interface MetaItem {
@@ -146,6 +148,7 @@ const DEFAULT_OPTIONS: Required<SeoOptions> = {
   includeFAQ: true,
   titleTemplate: '%s',
   titleSeparator: ' | ',
+  applyHead: true,
 };
 
 // ============================================================================
@@ -289,8 +292,9 @@ export function useSeo(
   // Apply to Document
   // ========================================
 
-  // Apply head to document
-  useHead(head);
+  if (mergedOptions.applyHead) {
+    useHead(head);
+  }
 
   // Apply structured data via Schema.org module
   useSchemaOrg(structuredData);

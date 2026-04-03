@@ -5,6 +5,7 @@
 
 // Data fetching composables
 export { usePageData, normalizeBlocks, normalizeMediaArray, buildPageEndpoint } from './usePageData';
+export { usePageDocument } from './usePageDocument';
 export { useOffer, useOfferState, useMultipleOffers } from './useOffer';
 export {
   useSiteManifest,
