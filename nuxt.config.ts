@@ -4,7 +4,7 @@ import {
   SITEMAP_API_BASE,
   BACKEND_BASE_URL,
 } from "./server/utils/remote-sitemap";
-import { activeTheme } from "./theme.config";
+import { activeTheme, activeThemeConfig, availableThemes } from "./theme.config";
 
 export default defineNuxtConfig({
   devtools: { enabled: false },
@@ -12,13 +12,13 @@ export default defineNuxtConfig({
 
   // Расширение темой как Nuxt Layer (компоненты, layouts, composables темы будут приоритетнее)
   extends: [
-    `./themes/${activeTheme}`,
+    activeThemeConfig.path,
   ],
 
   // Алиасы для новой архитектуры
   alias: {
     '@core': resolve(__dirname, './core'),
-    '@theme': resolve(__dirname, `./themes/${activeTheme}`),
+    '@theme': resolve(__dirname, activeThemeConfig.path),
     '@shared': resolve(__dirname, './shared'),
   },
 
@@ -154,6 +154,7 @@ export default defineNuxtConfig({
     public: {
       siteId: SITE_ID,
       activeTheme: activeTheme,
+      availableThemes,
       mediaStorageUrl: process.env.MEDIA_STORAGE_URL,
       sitemapApiBase: SITEMAP_API_BASE,
       backHost: BACKEND_BASE_URL || undefined,
@@ -170,6 +171,7 @@ export default defineNuxtConfig({
     },
     server: {
       siteId: SITE_ID,
+      activeTheme: activeTheme,
       backHost: BACKEND_BASE_URL || undefined,
       mediaStorageUrl: process.env.MEDIA_STORAGE_URL,
       sitemapApiBase: SITEMAP_API_BASE,

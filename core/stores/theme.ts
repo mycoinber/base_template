@@ -5,6 +5,7 @@
 
 import { defineStore } from 'pinia';
 import type { ThemeConfig } from '@/core/types/theme';
+import { activeTheme as configuredTheme, availableThemes as configuredThemes } from '@/theme.config';
 
 export interface ThemeState {
   activeTheme: string;
@@ -17,11 +18,11 @@ export interface ThemeState {
 
 export const useThemeStore = defineStore('theme', {
   state: (): ThemeState => ({
-    activeTheme: 'parimatch',
+    activeTheme: configuredTheme,
     config: null,
     isLoaded: false,
     isDark: false,
-    availableThemes: ['parimatch'],
+    availableThemes: [...configuredThemes],
     error: null,
   }),
 

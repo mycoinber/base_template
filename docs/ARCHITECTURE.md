@@ -1,5 +1,16 @@
 # Frontend Architecture
 
+## Theme Model
+
+The repo is designed for many themes, but one active theme per app instance.
+
+Theme activation is env-driven:
+- `ACTIVE_THEME=<name>` in `.env`
+- resolved in root `theme.config.ts`
+- used by Nuxt `extends`, `@theme` alias, auto-imported `Theme*` components, and Tailwind scanning
+
+This is a deployment/build-time choice, not a runtime browser theme toggle.
+
 ## Canonical Runtime Layer
 
 The current working frontend path is:
@@ -11,7 +22,7 @@ The current working frontend path is:
 - `core/composables/useNavigation.ts`
 - `core/composables/useSiteManifest.ts`
 - `core/components/*`
-- `themes/parimatch/*`
+- `themes/<active-theme>/*`
 
 Old top-level frontend folders `components/*` and `composables/*` have been removed from runtime.
 
@@ -39,7 +50,7 @@ Nuxt page
 │   ├── stores/
 │   └── types/
 ├── themes/
-│   └── parimatch/
+│   └── <theme-name>/
 │       ├── components/
 │       ├── layouts/
 │       ├── tokens/
@@ -77,8 +88,35 @@ Theme:
 - design tokens
 - theme SCSS and Tailwind preset
 
-## Remaining Gaps
+## Env Contract
 
-The repo is cleaner now, but not fully “ideal” yet:
-- only one real theme is active and validated: `parimatch`
-- some docs and changelog entries still refer to migration history
+Required environment:
+- `SITE_ID`
+- `BACKEND_URL`
+- `SITEMAP_API_BASE`
+- `MEDIA_STORAGE_URL`
+- `SLUG`
+- `ACTIVE_THEME`
+
+Optional theme repainting:
+- `NUXT_PUBLIC_COLOR_PRIMARY`
+- `NUXT_PUBLIC_COLOR_SECONDARY`
+- `NUXT_PUBLIC_COLOR_ACCENT`
+- `NUXT_PUBLIC_COLOR_BG_PRIMARY`
+- `NUXT_PUBLIC_COLOR_BG_SECONDARY`
+- `NUXT_PUBLIC_COLOR_TEXT_PRIMARY`
+- `NUXT_PUBLIC_COLOR_TEXT_HEADING`
+- `NUXT_PUBLIC_COLOR_TEXT_INVERSE`
+- `NUXT_PUBLIC_COLOR_BORDER`
+
+## Adding A Theme
+
+1. Create `themes/<name>/`
+2. Implement `theme.config.ts`, `nuxt.config.ts`, `tailwind.preset.ts`, theme components/layouts/tokens
+3. Register `<name>` in root `theme.config.ts`
+4. Set `ACTIVE_THEME=<name>` in `.env`
+5. Restart dev/build
+
+## Current Limitation
+
+The architecture now supports many themes structurally, but only registered themes can be activated, and each running app instance still uses one selected theme at a time.

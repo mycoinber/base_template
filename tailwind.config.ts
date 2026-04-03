@@ -4,7 +4,7 @@
  */
 
 import type { Config } from 'tailwindcss';
-import { activeTheme } from './theme.config';
+import { activeThemeConfig } from './theme.config';
 
 // Базовая конфигурация с поддержкой preset'ов
 const config: Config = {
@@ -13,8 +13,8 @@ const config: Config = {
     "./core/components/**/*.{js,vue,ts}",
 
     // Theme components
-    `./themes/${activeTheme}/components/**/*.{js,vue,ts}`,
-    `./themes/${activeTheme}/layouts/**/*.vue`,
+    `${activeThemeConfig.path}/components/**/*.{js,vue,ts}`,
+    `${activeThemeConfig.path}/layouts/**/*.vue`,
 
     // App files
     "./app/**/*.{js,vue,ts}",
