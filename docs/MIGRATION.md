@@ -1,3 +1,9 @@
+# Migration Plan (Historical)
+
+This document is kept as migration history and implementation notes.
+It does not describe the current runtime structure exactly.
+For the current architecture, use `README.md`, `docs/ARCHITECTURE.md`, and `docs/HOW_TO_RUN.md`.
+
 # 🔄 Миграция на новую архитектуру
 
 ## Обзор миграции

@@ -3,7 +3,7 @@ import {
   buildSitemapFromPayload,
   fetchRemoteSitemap,
   shouldHandleSitemapEvent,
-} from "../../utils/remote-sitemap";
+} from "../utils/remote-sitemap";
 
 export default defineNitroPlugin((nitroApp) => {
   nitroApp.hooks.hook('sitemap:output', async (ctx) => {

@@ -6,7 +6,7 @@
 -->
 
 <script setup lang="ts">
-import { resolveMediaPath } from '@/utils/mediaPath';
+import { resolveMediaPath } from '@core/utils/mediaPath';
 import type { PageData, PageOffer } from '@/core/types/page';
 
 interface Props {
@@ -45,7 +45,7 @@ const heroAlt = computed(() => {
 
 const heroTitle = computed(() => activeOffer.value?.data?.title || '');
 const heroCtaText = computed(() => activeOffer.value?.data?.ctaText || '');
-const heroCtaLink = computed(() => activeOffer.value?.data?.link || '#');
+const heroCtaLink = computed(() => activeOffer.value?.data?.link || '');
 const heroDescription = computed(() => activeOffer.value?.data?.description || '');
 
 // Env colors
@@ -66,7 +66,7 @@ const pmGrey = computed(() => String(config.public.pmGrey || '#C8C3C7'));
 
         <!-- CTA кнопка — 32px под title -->
         <ThemeButton
-          v-if="heroCtaText"
+          v-if="heroCtaText && heroCtaLink"
           variant="tertiary"
           size="md"
           :data="{ link: heroCtaLink, title: heroCtaText, target: '_blank', rel: 'noopener noreferrer' }"

@@ -1,5 +1,5 @@
 import { joinURL } from 'ufo';
-import { resolveMediaPath } from '~/utils/mediaPath';
+import { resolveMediaPath } from '@core/utils/mediaPath';
 
 type ProviderOptions = {
   baseURL?: string;

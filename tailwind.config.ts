@@ -18,12 +18,9 @@ const config: Config = {
 
     // App files
     "./app/**/*.{js,vue,ts}",
-    "./components/**/*.{js,vue,ts}",
     "./layouts/**/*.vue",
     "./pages/**/*.vue",
     "./plugins/**/*.{js,ts}",
-    "./composables/**/*.{js,ts}",
-    "./utils/**/*.{js,ts}",
     "./app.vue",
     "./error.vue",
   ],

@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Invalid media path' });
   }
 
-  const target = `${baseUrl.replace(/\/$/, '')}/${cleanParam}`;
+  const target = `${baseUrl.replace(/\/$/, '')}/siteid/${cleanParam}`;
   const cacheKey = `siteid:${cleanParam.toLowerCase()}`;
   const storage = useStorage('cache:media');
 

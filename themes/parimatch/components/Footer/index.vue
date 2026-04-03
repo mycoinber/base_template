@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
-import { resolveMediaPath } from '@/utils/mediaPath';
+import { resolveMediaPath } from '@core/utils/mediaPath';
 import type { SiteNavigation, WebsiteManifestPayload, PageOffer } from '@/core/types/page';
 
 const { t } = useI18n();
@@ -14,6 +14,7 @@ const { t } = useI18n();
 interface Props {
   data: SiteNavigation | null;
   siteManifest?: WebsiteManifestPayload | null;
+  offers?: PageOffer[];
 }
 
 const props = defineProps<Props>();
@@ -61,12 +62,13 @@ const rightColumn = computed(() => navigationLinks.value.slice(Math.ceil(navigat
 const sharedOffers = useState<PageOffer[]>('pageOffers', () => []);
 
 const footerOffer = computed<PageOffer | null>(() => {
-  return sharedOffers.value.find(
+  const source = props.offers?.length ? props.offers : sharedOffers.value;
+  return source.find(
     (o) => o.placement === 'footer' && o.data?.state !== 'inactive'
   ) ?? null;
 });
 
-const ctaLink = computed(() => footerOffer.value?.data?.link || '#');
+const ctaLink = computed(() => footerOffer.value?.data?.link || '');
 const ctaText = computed(() => footerOffer.value?.data?.ctaText || t('registration'));
 const footerImage = computed(() => {
   const path = footerOffer.value?.data?.imageMedia?.path;
@@ -152,7 +154,7 @@ const currentYear = new Date().getFullYear();
         <div class="flex flex-col items-end gap-6 shrink-0">
           <!-- CTA Button -->
           <ThemeButton
-            v-if="footerOffer"
+            v-if="footerOffer && ctaLink"
             variant="tertiary"
             size="sm"
             :data="{ link: ctaLink, title: ctaText, target: '_blank', rel: 'noopener noreferrer' }"
@@ -176,7 +178,7 @@ const currentYear = new Date().getFullYear();
 
       <!-- ====== Footer Offer Banner (imageMedia из placement=footer) ====== -->
       <a
-        v-if="footerOffer && footerImage"
+        v-if="footerOffer && footerImage && ctaLink"
         :href="ctaLink"
         target="_blank"
         rel="noopener noreferrer"
@@ -208,4 +210,3 @@ const currentYear = new Date().getFullYear();
     </div>
   </footer>
 </template>
-

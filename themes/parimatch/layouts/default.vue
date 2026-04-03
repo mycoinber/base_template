@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
 import { useNavigation, useSiteManifest } from '@/core/composables';
-import type { ArticleImage } from '@/core/types/page';
+import type { ArticleImage, PageData } from '@/core/types/page';
 
 // ============================================================================
 // Site Data
@@ -37,6 +37,19 @@ const {
 
 // Shared logo state (legacy support for components that use useState)
 const sharedLogo = useState<ArticleImage[]>("siteLogo", () => []);
+const route = useRoute();
+const config = useRuntimeConfig();
+const siteId = import.meta.server ? config.server.siteId : config.public.siteId;
+const rawSlug = route.params.slug;
+const slugArray = Array.isArray(rawSlug)
+  ? rawSlug
+  : typeof rawSlug === 'string'
+    ? rawSlug.split('/')
+    : [];
+const slug = slugArray.length ? slugArray.join('/') : '';
+const pageDataKey = `page-${slug || 'home'}-${siteId}`;
+const pageData = useNuxtData<PageData | null>(pageDataKey);
+const pageOffers = computed(() => pageData.data.value?.offers || []);
 
 // Watch for logo changes from manifest
 watch(
@@ -94,6 +107,7 @@ if (process.dev) {
         :data="navigation"
         :site-manifest="siteManifest"
         :logo-image="logoImage"
+        :offers="pageOffers"
       />
 
       <!-- Page Content -->
@@ -104,6 +118,7 @@ if (process.dev) {
         v-if="navigation"
         :data="navigation"
         :site-manifest="siteManifest"
+        :offers="pageOffers"
       />
     </template>
 

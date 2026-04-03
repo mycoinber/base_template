@@ -5,7 +5,7 @@
 -->
 
 <script setup lang="ts">
-import { resolveMediaPath } from '@/utils/mediaPath';
+import { resolveMediaPath } from '@core/utils/mediaPath';
 
 interface Props {
   data: any;

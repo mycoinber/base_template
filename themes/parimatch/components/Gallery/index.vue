@@ -6,7 +6,7 @@
 -->
 
 <script setup lang="ts">
-import { resolveMediaPath } from '@/utils/mediaPath';
+import { resolveMediaPath } from '@core/utils/mediaPath';
 import type { PageData, PageOffer } from '@/core/types/page';
 
 interface Props {

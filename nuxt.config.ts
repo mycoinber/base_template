@@ -3,7 +3,7 @@ import {
   SITE_ID,
   SITEMAP_API_BASE,
   BACKEND_BASE_URL,
-} from "./utils/remote-sitemap";
+} from "./server/utils/remote-sitemap";
 import { activeTheme } from "./theme.config";
 
 export default defineNuxtConfig({
@@ -22,7 +22,7 @@ export default defineNuxtConfig({
     '@shared': resolve(__dirname, './shared'),
   },
 
-  // Конфигурация компонентов: приоритет темы > core > базовые
+  // Конфигурация компонентов: приоритет темы > core
   components: [
     // 1. Компоненты активной темы с префиксом Theme (наивысший приоритет)
     {
@@ -37,12 +37,6 @@ export default defineNuxtConfig({
       pathPrefix: false,
       prefix: 'Headless',
       priority: 5,
-    },
-    // 3. Базовые компоненты (fallback, низкий приоритет)
-    {
-      path: '~/components',
-      pathPrefix: false,
-      priority: 0,
     },
   ],
 
@@ -183,7 +177,6 @@ export default defineNuxtConfig({
   },
   plugins: [
     "~/plugins/vue-query.ts",
-    "~/plugins/theme-resolver.client.ts",
     "~/plugins/theme-colors.client.ts",
   ],
   image: {

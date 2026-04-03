@@ -160,7 +160,7 @@ export async function useSiteManifest(): Promise<UseSiteManifestReturn> {
       isLoading.value = true;
       error.value = null;
 
-      // Server-side: read from disk via Nitro storage
+      // Server-side: read manifest file directly without HTTP recursion
       if (import.meta.server) {
         const manifest = await readManifestFromDisk();
         if (manifest) {
@@ -227,7 +227,7 @@ export async function useSiteManifest(): Promise<UseSiteManifestReturn> {
 // ============================================================================
 
 /**
- * Read manifest from disk using Nitro storage (server only)
+ * Read manifest directly from disk on the server without creating an internal HTTP request.
  */
 async function readManifestFromDisk(): Promise<WebsiteManifestPayload | null> {
   if (!import.meta.server) {
@@ -238,51 +238,18 @@ async function readManifestFromDisk(): Promise<WebsiteManifestPayload | null> {
   }
 
   try {
-    // Try to get Nitro storage
-    const nitroApp = typeof useNitroApp === 'function' ? useNitroApp() : null;
-    const storage = (nitroApp as any)?.storage;
+    const readFile = getBuiltinModule<(path: string, encoding: BufferEncoding) => Promise<string>>('node:fs/promises', 'readFile');
+    const resolvePath = getBuiltinModule<(...parts: string[]) => string>('node:path', 'resolve');
 
-    if (!storage) {
-      // Fallback to direct file read on server (avoid HTTP loop)
+    if (!readFile || !resolvePath) {
       if (process.dev) {
-        console.info('[useSiteManifest] No storage, falling back to direct file read');
-      }
-
-      // Dynamic import for Node.js fs module (server only)
-      const { readFileSync } = await import('node:fs');
-      const { resolve } = await import('node:path');
-
-      try {
-        const publicDir = resolve(process.cwd(), 'public');
-        const manifestPath = resolve(publicDir, MANIFEST_FILE_NAME);
-        const content = readFileSync(manifestPath, 'utf-8');
-        return JSON.parse(content);
-      } catch (fsError) {
-        if (process.dev) {
-          console.warn('[useSiteManifest] Could not read manifest file:', fsError);
-        }
-        return null;
-      }
-    }
-
-    const raw = await storage.getItem(`root:public/${MANIFEST_FILE_NAME}`);
-
-    if (!raw) {
-      if (process.dev) {
-        console.info(`[useSiteManifest] No manifest at root:public/${MANIFEST_FILE_NAME}`);
+        console.warn('[useSiteManifest] Builtin module access is unavailable');
       }
       return null;
     }
 
-    const text = normalizeRawValue(raw);
-    if (!text) {
-      if (process.dev) {
-        console.warn('[useSiteManifest] Manifest file is empty');
-      }
-      return null;
-    }
-
-    const parsed = JSON.parse(text);
+    const manifestPath = resolvePath(process.cwd(), 'public', MANIFEST_FILE_NAME);
+    const parsed = JSON.parse(await readFile(manifestPath, 'utf-8')) as WebsiteManifestPayload;
 
     if (process.dev) {
       console.info('[useSiteManifest] Loaded manifest from disk');
@@ -297,35 +264,18 @@ async function readManifestFromDisk(): Promise<WebsiteManifestPayload | null> {
   }
 }
 
-/**
- * Normalize raw storage value to string
- */
-function normalizeRawValue(value: unknown): string | null {
-  if (typeof value === 'string') {
-    return value;
-  }
+function getBuiltinModule<T>(moduleName: string, exportName: string): T | null {
+  const loader = (process as typeof process & {
+    getBuiltinModule?: (name: string) => Record<string, unknown> | undefined;
+  }).getBuiltinModule;
 
-  if (!value) {
+  if (typeof loader !== 'function') {
     return null;
   }
 
-  if (value instanceof Uint8Array) {
-    return new TextDecoder('utf-8').decode(value);
-  }
-
-  if (value instanceof ArrayBuffer) {
-    return new TextDecoder('utf-8').decode(new Uint8Array(value));
-  }
-
-  if (typeof value === 'object' && 'toString' in value) {
-    try {
-      return String(value);
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
+  const mod = loader(moduleName);
+  const value = mod?.[exportName];
+  return typeof value === 'function' ? (value as T) : null;
 }
 
 // ============================================================================

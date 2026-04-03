@@ -1,26 +1,28 @@
 // server/middleware/block-bad-bots.global.ts
 export default defineEventHandler((event) => {
-  const ua = (getHeader(event, "user-agent") || "").toString();
-  console.log("[block-bad-bots] path=", event.path, "ua=", ua);
-  const url = getRequestURL(event);
+  const host = String(getHeader(event, "host") || "");
+  if (
+    import.meta.dev ||
+    host.startsWith("localhost:") ||
+    host.startsWith("127.0.0.1:") ||
+    host.startsWith("[::1]:")
+  ) {
+    return;
+  }
 
-  console.log(
-    "[block-bad-bots]",
-    "req.url=",
-    event.node.req.url,
-    "href=",
-    url.href,
-    "search=",
-    url.search,
-    "query=",
-    getQuery(event),
-    "x-vercel-id=",
-    getHeader(event, "x-vercel-id"),
-    "x-forwarded-uri=",
-    getHeader(event, "x-forwarded-uri"),
-    "ua=",
-    ua
-  );
+  const path = event.path || "";
+  if (
+    path.startsWith("/_nuxt/") ||
+    path.startsWith("/siteid/") ||
+    path.startsWith("/media/") ||
+    path.startsWith("/fonts/") ||
+    path === "/favicon.ico" ||
+    path === "/site-manifest.json"
+  ) {
+    return;
+  }
+
+  const ua = (getHeader(event, "user-agent") || "").toString();
   // (необязательно) оставим "белый список" системных ботов/превью,
   // чтобы не ломать шаринг/проверки статуса и т.п.
   if (!ua) return;
@@ -33,7 +35,6 @@ export default defineEventHandler((event) => {
   );
 
   if (/(AhrefsBot|AhrefsSiteAudit)/i.test(ua)) {
-    console.log("[block-bad-bots] BLOCK", { path: event.path, ua });
     setResponseStatus(event, 403, "Forbidden");
     setHeader(event, "Cache-Control", "private, no-store, max-age=0");
     setHeader(event, "Content-Type", "text/plain; charset=utf-8");
@@ -42,8 +43,6 @@ export default defineEventHandler((event) => {
 
   if (BLOCK_RE.test(ua)) {
     // 403 и короткий текст — этого достаточно
-    console.log("[block-bad-bots] BLOCK", { path: event.path, ua });
-
     setResponseStatus(event, 403, "Forbidden");
     setHeader(event, "Cache-Control", "private, no-store, max-age=0");
     setHeader(event, "Content-Type", "text/plain; charset=utf-8");

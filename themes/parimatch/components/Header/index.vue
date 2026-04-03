@@ -64,7 +64,7 @@ const headerOffer = computed<PageOffer | null>(() => {
   return source.find((o) => o.placement === 'header' && o.data?.state !== 'inactive') ?? null;
 });
 
-const ctaLink = computed(() => headerOffer.value?.data?.link || '#');
+const ctaLink = computed(() => headerOffer.value?.data?.link || '');
 const ctaText = computed(() => headerOffer.value?.data?.ctaText || t('registration'));
 
 // ============================================================================
@@ -104,6 +104,7 @@ const isOpen = ref(false);
 
     <!-- CTA Button -->
     <ThemeButton
+      v-if="ctaLink"
       variant="tertiary"
       size="lg"
       :data="{ link: ctaLink, title: ctaText, target: '_blank', rel: 'noopener noreferrer' }"
@@ -174,6 +175,7 @@ const isOpen = ref(false);
         <!-- Кнопка Registration — чёрный фон, жёлтый текст -->
         <div class="w-full mt-8 mb-0" @click="isOpen = false">
           <ThemeButton
+            v-if="ctaLink"
             variant="tertiary"
             size="sm"
             :data="{ link: ctaLink, title: ctaText, target: '_blank', rel: 'noopener noreferrer' }"
@@ -190,4 +192,3 @@ const isOpen = ref(false);
   </Transition>
 
 </template>
-
