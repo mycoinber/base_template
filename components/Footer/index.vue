@@ -52,6 +52,7 @@ const resolvedLogo = computed(() => {
 const siteTitle = computed(() => {
   return props.data?.siteName || props.data?.name || props.data?.head?.title || 'site';
 });
+const currentYear = new Date().getFullYear();
 
 const normalizeRoutePath = (value) => {
   if (!value) return ''
@@ -102,7 +103,7 @@ const resolveLink = (slug) => {
         </div>
 
         <div class="w-full text-center opacity-50 text-base max-[541px]:text-sm">
-          &#169; Copyright 2025. {{ siteDomain }}
+          &#169; Copyright {{ currentYear }}. {{ siteDomain }}
         </div>
       </div>
     </div>

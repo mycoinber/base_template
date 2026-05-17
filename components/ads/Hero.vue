@@ -59,7 +59,7 @@ const imageSrc = computed(() => {
         <div class="flex flex-col items-center justify-center gap-6 py-8 text-center">
           <div class="flex flex-col gap-2">
             <span class="font-font-02 text-6xl font-semibold leading-tight max-[541px]:text-xl">
-              {{ title }}ы
+              {{ title }}
             </span>
 
             <p v-if="description" class="text-base leading-relaxed opacity-80">
