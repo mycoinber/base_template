@@ -13,6 +13,9 @@ export async function useSiteManifest() {
   if (import.meta.server) {
     if (manifestState.value == null) {
       manifestState.value = await readManifestFromDisk();
+      if (manifestState.value == null) {
+        manifestState.value = await readManifestFromCurrentOrigin();
+      }
     }
     return { data: manifestState };
   }
@@ -64,6 +67,32 @@ async function readManifestFromDisk(): Promise<WebsiteManifestPayload | null> {
   } catch {
     return null;
   }
+}
+
+async function readManifestFromCurrentOrigin(): Promise<WebsiteManifestPayload | null> {
+  if (!import.meta.server) {
+    return null;
+  }
+
+  try {
+    const requestUrl = useRequestURL();
+    const manifestUrl = new URL(`/${MANIFEST_FILE_NAME}`, requestUrl.origin).toString();
+    const payload = await $fetch<unknown>(manifestUrl, {
+      headers: { accept: 'application/json' },
+    });
+
+    if (!isManifestPayload(payload)) {
+      return null;
+    }
+
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+function isManifestPayload(value: unknown): value is WebsiteManifestPayload {
+  return Boolean(value) && typeof value === 'object';
 }
 
 function normalizeRawValue(value: unknown): string | null {
