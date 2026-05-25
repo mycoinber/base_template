@@ -11,10 +11,23 @@ export async function useSiteManifest() {
   );
 
   if (import.meta.server) {
+    let requestOrigin = '';
+    let userAgent = '';
+    try {
+      requestOrigin = useRequestURL().origin;
+      userAgent = useRequestHeaders(['user-agent'])['user-agent'] || '';
+    } catch {
+      requestOrigin = '';
+      userAgent = '';
+    }
+
     if (manifestState.value == null) {
       manifestState.value = await readManifestFromDisk();
       if (manifestState.value == null) {
-        manifestState.value = await readManifestFromCurrentOrigin();
+        manifestState.value = await readManifestFromCurrentOrigin({
+          origin: requestOrigin,
+          userAgent,
+        });
       }
     }
     return { data: manifestState };
@@ -69,16 +82,28 @@ async function readManifestFromDisk(): Promise<WebsiteManifestPayload | null> {
   }
 }
 
-async function readManifestFromCurrentOrigin(): Promise<WebsiteManifestPayload | null> {
+async function readManifestFromCurrentOrigin(params: {
+  origin?: string | null;
+  userAgent?: string | null;
+}): Promise<WebsiteManifestPayload | null> {
   if (!import.meta.server) {
     return null;
   }
 
+  const origin = params.origin ? String(params.origin).trim() : '';
+  if (!origin) {
+    return null;
+  }
+
+  const userAgent = params.userAgent ? String(params.userAgent).trim() : '';
+
   try {
-    const requestUrl = useRequestURL();
-    const manifestUrl = new URL(`/${MANIFEST_FILE_NAME}`, requestUrl.origin).toString();
+    const manifestUrl = new URL(`/${MANIFEST_FILE_NAME}`, origin).toString();
     const payload = await $fetch<unknown>(manifestUrl, {
-      headers: { accept: 'application/json' },
+      headers: {
+        accept: 'application/json',
+        ...(userAgent ? { 'user-agent': userAgent } : {}),
+      },
     });
 
     if (!isManifestPayload(payload)) {
