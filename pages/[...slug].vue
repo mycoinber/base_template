@@ -36,6 +36,27 @@ if (error.value) {
   throw error.value;
 }
 
+const normalizeRequestSlug = (value) => {
+  if (!value) return "";
+  return String(value)
+    .trim()
+    .replace(/^\/+/g, "")
+    .replace(/\/+/g, "/")
+    .replace(/\/+$/g, "");
+};
+
+if (import.meta.server) {
+  const requestedSlug = normalizeRequestSlug(slug);
+  const isHomePage = Number(data.value?.homePage) === 1;
+  const hasLocalePrefix = Boolean(data.value?.localePrefix);
+
+  if (isHomePage && !hasLocalePrefix && requestedSlug) {
+    await navigateTo("/", {
+      redirectCode: 301,
+    });
+  }
+}
+
 const { data: siteManifestRaw } = await useSiteManifest();
 
 const manifestHead = computed(() => manifestToHead(siteManifestRaw.value));
@@ -46,8 +67,15 @@ const pageHead = computed(() => data.value?.head || {});
 const pagePrimaryLang = computed(() => data.value?.primaryLang || null);
 const pageLang = computed(() => data.value?.lang || pagePrimaryLang.value || "en");
 const pageDomain = computed(() => data.value?.domain || siteDomain);
-const pageSlug = computed(() => normalizeSlugForPath(data.value?.slug || slug || ""));
-const canonicalSlugValue = computed(() => normalizeSlugForPath(data.value?.canonicalSlug || data.value?.slug || slug || ""));
+const isHomePage = computed(() => Number(data.value?.homePage) === 1);
+const pageSlug = computed(() => (
+  isHomePage.value ? "" : normalizeSlugForPath(data.value?.slug || slug || "")
+));
+const canonicalSlugValue = computed(() => (
+  isHomePage.value
+    ? ""
+    : normalizeSlugForPath(data.value?.canonicalSlug || data.value?.slug || slug || "")
+));
 const pageUrl = computed(() => buildAbsoluteHref(pageDomain.value, pageSlug.value));
 
 const canonicalHref = computed(() => buildAbsoluteHref(pageDomain.value, pageSlug.value));
