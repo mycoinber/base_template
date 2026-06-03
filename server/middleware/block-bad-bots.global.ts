@@ -1,7 +1,7 @@
 // server/middleware/block-bad-bots.global.ts
 export default defineEventHandler((event) => {
   const path = (event.path || event.node?.req?.url || "").split("?")[0].toLowerCase();
-  if (path.includes("sitemap") && path.endsWith(".xml")) return;
+  if (path === "/robots.txt" || (path.includes("sitemap") && path.endsWith(".xml"))) return;
 
   const ua = (getHeader(event, "user-agent") || "").toString();
   // (необязательно) оставим "белый список" системных ботов/превью,
