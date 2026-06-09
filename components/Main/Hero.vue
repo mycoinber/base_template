@@ -13,7 +13,8 @@ const props = defineProps({
 
 // proxy images via same-origin route to hide backend
 
-const { offer } = useOffer(computed(() => props.data.offer?._id))
+const offerId = computed(() => props.data.offer?._id || props.data.offer?.id || '')
+const { offer } = useOffer(offerId)
 
 const heroSections = computed(() => {
   return offer.value?.sections?.filter(section => section.type === 'hero') || [];
@@ -48,7 +49,7 @@ const heroBackground = computed(() => {
           <span class="text-sm opacity-50">{{ offer.title }}</span>
 
           <GeneralButton :data="{
-            link: offer.link || '',
+            offerId,
             title: offer.button1 || t('play'),
             target: '_blank',
             rel: 'noopener noreferrer',
@@ -67,7 +68,7 @@ const heroBackground = computed(() => {
         </div>
 
         <GeneralButtonThree :data="{
-          link: offer.link || '',
+          offerId,
           title: offer.button2 || t('play'),
           target: '_blank',
           rel: 'noopener noreferrer',
@@ -101,7 +102,7 @@ const heroBackground = computed(() => {
           <span class="font-font-02 text-lg font-medium leading-[120%] text-color-03 text-center uppercase pt-4 border-t border-border">{{ section.headline }}</span>
 
           <GeneralButton :data="{
-            link: section.link || '/go',
+            offerId,
             title: section.cta || t('bonus'),
             target: '_blank',
             rel: 'noopener noreferrer',

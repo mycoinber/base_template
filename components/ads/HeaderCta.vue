@@ -17,7 +17,10 @@ const headerOffer = computed(() => {
 
 const headerOfferData = computed(() => headerOffer.value?.data || storedHeaderOfferData.value || {});
 
-const headerOfferLink = computed(() => headerOfferData.value?.link || "");
+const headerOfferId = computed(() =>
+  headerOffer.value?.offer || headerOfferData.value?.id || headerOfferData.value?._id || "",
+);
+const { openOffer } = useOfferNavigation(headerOfferId);
 
 const headerPrimaryLabel = computed(() => {
   const data = headerOfferData.value || {};
@@ -28,18 +31,17 @@ const headerPrimaryLabel = computed(() => {
 });
 
 const headerOfferEnabled = computed(() =>
-  Boolean(headerOfferLink.value && headerPrimaryLabel.value),
+  Boolean(headerOfferId.value && headerPrimaryLabel.value),
 );
 </script>
 
 <template>
-  <NuxtLink
+  <button
     v-if="headerOfferEnabled"
-    :href="headerOfferLink"
-    target="_blank"
-    rel="noopener noreferrer nofollow"
+    type="button"
     class="font-font-02 inline-flex w-full items-center justify-center rounded-[0.4rem] bg-color-01 px-6 py-4 text-base font-medium uppercase text-color-white no-underline transition-[filter] duration-300 hover:brightness-[0.7]"
+    @click="openOffer()"
   >
     {{ headerPrimaryLabel }}
-  </NuxtLink>
+  </button>
 </template>

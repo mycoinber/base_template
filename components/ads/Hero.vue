@@ -13,7 +13,8 @@ const data = computed(() => props.offer?.data || {})
 const image = computed(() => data.value.imageMedia || data.value.image || null)
 const title = computed(() => data.value.title || data.value.label || '')
 const description = computed(() => data.value.description || '')
-const link = computed(() => data.value.link || '#')
+const offerId = computed(() => props.offer?.offer || data.value.id || data.value._id || '')
+const { openOffer } = useOfferNavigation(offerId)
 const buttonText = computed(() => {
   if (typeof data.value.ctaText === 'string' && data.value.ctaText.trim()) {
     return data.value.ctaText.trim()
@@ -67,15 +68,14 @@ const imageSrc = computed(() => {
             </p>
           </div>
 
-          <NuxtLink
-            v-if="data.ctaText || data.button"
-            :href="link"
-            target="_blank"
-            rel="noopener noreferrer nofollow"
+          <button
+            v-if="offerId && (data.ctaText || data.button)"
+            type="button"
             class="font-font-02 inline-flex w-full items-center justify-center rounded-[0.4rem] bg-color-01 px-6 py-4 text-base font-medium uppercase text-color-white no-underline transition-[filter] duration-300 hover:brightness-[0.7] max-w-80"
+            @click="openOffer()"
           >
             {{ buttonText }}
-          </NuxtLink>
+          </button>
         </div>
       </div>
     </div>
