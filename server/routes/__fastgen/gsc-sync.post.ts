@@ -2,6 +2,7 @@ import {
   createError,
   defineEventHandler,
   getHeader,
+  readBody,
   setHeader,
   setResponseStatus,
 } from 'h3';
@@ -25,6 +26,7 @@ interface AgentLeaseResponse {
   nextSyncAt?: string;
   leaseUntil?: string;
   syncIntervalMinutes?: number;
+  serviceAccountJson?: string;
   bindings?: AgentLeaseBinding[];
 }
 
@@ -39,21 +41,44 @@ interface GscDailyRow {
 const GSC_SCOPE = 'https://www.googleapis.com/auth/webmasters.readonly';
 const GSC_API_BASE = 'https://www.googleapis.com/webmasters/v3';
 
+class AgentRouteError extends Error {
+  constructor(
+    public readonly statusCode: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
 export default defineEventHandler(async (event) => {
   setHeader(event, 'Cache-Control', 'no-store');
   setHeader(event, 'X-Robots-Tag', 'noindex, nofollow');
 
-  const env = readAgentEnv();
   const incomingToken = extractBearerToken(getHeader(event, 'authorization'));
-  if (!incomingToken || incomingToken !== env.agentSecret) {
-    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
+  if (!incomingToken) {
+    setResponseStatus(event, 401, 'Unauthorized');
+    return { error: true, message: 'Unauthorized' };
   }
 
-  const result = await runAgentSync(env);
-  if (!result.due) {
-    setResponseStatus(event, 202);
+  const body = await readBody<{ websiteId?: string; agentId?: string }>(event).catch(() => ({}));
+  const env = readAgentEnv(event, body, incomingToken);
+  if (!env.ok) {
+    setResponseStatus(event, 503, env.error);
+    return { error: true, message: env.error, missing: env.missing };
   }
-  return result;
+
+  try {
+    const result = await runAgentSync(env.value);
+    if (!result.due) {
+      setResponseStatus(event, 202);
+    }
+    return result;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'GSC_AGENT_SYNC_FAILED';
+    const statusCode = error instanceof AgentRouteError ? error.statusCode : 502;
+    setResponseStatus(event, statusCode, message);
+    return { error: true, message };
+  }
 });
 
 async function runAgentSync(env: AgentEnv) {
@@ -73,7 +98,12 @@ async function runAgentSync(env: AgentEnv) {
     return { ok: true, due: false, reason: 'no_active_bindings' };
   }
 
-  const serviceAccount = parseServiceAccount(env.serviceAccountJson);
+  if (!lease.serviceAccountJson) {
+    await heartbeat(env, 'GSC_SERVICE_ACCOUNT_JSON_MISSING_IN_LEASE');
+    throw new Error('GSC_SERVICE_ACCOUNT_JSON_MISSING_IN_LEASE');
+  }
+
+  const serviceAccount = parseServiceAccount(lease.serviceAccountJson);
   const accessToken = await getAccessToken(serviceAccount);
   const daysBack = clampInt(env.daysBack, 1, 90, 14);
   const { startDate, endDate } = resolveFinalDateRange(daysBack);
@@ -111,28 +141,36 @@ interface AgentEnv {
   backendUrl: string;
   siteId: string;
   agentId: string;
-  agentSecret: string;
-  serviceAccountJson: string;
+  token: string;
   daysBack: number;
 }
 
-function readAgentEnv(): AgentEnv {
-  const backendUrl = trimTrailingSlash(process.env.BACKEND_URL || '');
-  const siteId = String(process.env.SITE_ID || '').trim();
-  const agentId = String(process.env.GSC_AGENT_ID || '').trim();
-  const agentSecret = String(process.env.GSC_AGENT_SECRET || '').trim();
-  const serviceAccountJson = String(process.env.GSC_SERVICE_ACCOUNT_JSON || '').trim();
-  if (!backendUrl || !siteId || !agentId || !agentSecret || !serviceAccountJson) {
-    throw createError({ statusCode: 503, statusMessage: 'GSC_AGENT_NOT_CONFIGURED' });
+function readAgentEnv(
+  event: any,
+  body: { websiteId?: string; agentId?: string },
+  token: string,
+): { ok: true; value: AgentEnv } | { ok: false; error: string; missing: string[] } {
+  const config = useRuntimeConfig(event);
+  const backendUrl = trimTrailingSlash(
+    process.env.BACKEND_URL || config.server?.backHost || config.public?.backHost || '',
+  );
+  const siteId = String(body.websiteId || process.env.SITE_ID || config.server?.siteId || config.public?.siteId || '').trim();
+  const agentId = String(body.agentId || process.env.GSC_AGENT_ID || '').trim();
+  const missing = [
+    !backendUrl ? 'BACKEND_URL' : '',
+    !siteId ? 'SITE_ID' : '',
+    !agentId ? 'GSC_AGENT_ID' : '',
+  ].filter(Boolean);
+  if (missing.length) {
+    return { ok: false, error: 'GSC_AGENT_NOT_CONFIGURED', missing };
   }
-  return {
+  return { ok: true, value: {
     backendUrl,
     siteId,
     agentId,
-    agentSecret,
-    serviceAccountJson,
+    token,
     daysBack: clampInt(process.env.GSC_DAYS_BACK, 1, 90, 14),
-  };
+  } };
 }
 
 async function requestLease(env: AgentEnv): Promise<AgentLeaseResponse> {
@@ -143,10 +181,10 @@ async function requestLease(env: AgentEnv): Promise<AgentLeaseResponse> {
   });
   const payload = await response.json().catch(() => null) as AgentLeaseResponse | { error?: string } | null;
   if (!response.ok) {
-    throw createError({
-      statusCode: 502,
-      statusMessage: `GSC_AGENT_LEASE_FAILED: ${payload && 'error' in payload ? payload.error : response.status}`,
-    });
+    throw new AgentRouteError(
+      response.status,
+      `GSC_AGENT_LEASE_FAILED: ${payload && 'error' in payload ? payload.error : response.status}`,
+    );
   }
   return payload as AgentLeaseResponse;
 }
@@ -296,7 +334,7 @@ function formatDate(date: Date): string {
 
 function authHeaders(env: AgentEnv): HeadersInit {
   return {
-    Authorization: `Bearer ${env.agentSecret}`,
+    Authorization: `Bearer ${env.token}`,
     'Content-Type': 'application/json',
   };
 }
