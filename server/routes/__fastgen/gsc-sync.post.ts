@@ -1,11 +1,10 @@
-interface Env {
-  BACKEND_URL: string;
-  SITE_ID: string;
-  GSC_AGENT_ID: string;
-  GSC_AGENT_SECRET: string;
-  GSC_SERVICE_ACCOUNT_JSON: string;
-  GSC_DAYS_BACK?: string;
-}
+import {
+  createError,
+  defineEventHandler,
+  getHeader,
+  setHeader,
+  setResponseStatus,
+} from 'h3';
 
 interface ServiceAccountJson {
   client_email: string;
@@ -22,8 +21,10 @@ interface AgentLeaseBinding {
 
 interface AgentLeaseResponse {
   due: boolean;
+  reason?: string;
   nextSyncAt?: string;
   leaseUntil?: string;
+  syncIntervalMinutes?: number;
   bindings?: AgentLeaseBinding[];
 }
 
@@ -38,33 +39,45 @@ interface GscDailyRow {
 const GSC_SCOPE = 'https://www.googleapis.com/auth/webmasters.readonly';
 const GSC_API_BASE = 'https://www.googleapis.com/webmasters/v3';
 
-export default {
-  async fetch(_request: Request, env: Env): Promise<Response> {
-    return Response.json({ ok: true, siteId: env.SITE_ID, agentId: env.GSC_AGENT_ID });
-  },
+export default defineEventHandler(async (event) => {
+  setHeader(event, 'Cache-Control', 'no-store');
+  setHeader(event, 'X-Robots-Tag', 'noindex, nofollow');
 
-  scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): void {
-    ctx.waitUntil(runScheduledSync(env));
-  },
-};
+  const env = readAgentEnv();
+  const incomingToken = extractBearerToken(getHeader(event, 'authorization'));
+  if (!incomingToken || incomingToken !== env.agentSecret) {
+    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
+  }
 
-async function runScheduledSync(env: Env): Promise<void> {
+  const result = await runAgentSync(env);
+  if (!result.due) {
+    setResponseStatus(event, 202);
+  }
+  return result;
+});
+
+async function runAgentSync(env: AgentEnv) {
   const lease = await requestLease(env);
   if (!lease.due) {
-    console.log(JSON.stringify({ event: 'gsc_agent_not_due', nextSyncAt: lease.nextSyncAt }));
-    return;
+    return {
+      ok: true,
+      due: false,
+      reason: lease.reason || 'not_due',
+      nextSyncAt: lease.nextSyncAt ?? null,
+    };
   }
 
   const bindings = Array.isArray(lease.bindings) ? lease.bindings : [];
   if (!bindings.length) {
     await heartbeat(env, 'No active GSC bindings returned by backend');
-    return;
+    return { ok: true, due: false, reason: 'no_active_bindings' };
   }
 
-  const serviceAccount = parseServiceAccount(env.GSC_SERVICE_ACCOUNT_JSON);
+  const serviceAccount = parseServiceAccount(env.serviceAccountJson);
   const accessToken = await getAccessToken(serviceAccount);
-  const daysBack = clampInt(env.GSC_DAYS_BACK, 1, 90, 14);
+  const daysBack = clampInt(env.daysBack, 1, 90, 14);
   const { startDate, endDate } = resolveFinalDateRange(daysBack);
+  const synced: Array<{ bindingId: string; siteUrl: string; rows: number }> = [];
 
   for (const binding of bindings) {
     try {
@@ -77,48 +90,78 @@ async function runScheduledSync(env: Env): Promise<void> {
         dataState: binding.dataState || 'final',
       });
       await ingestDailySummary(env, binding, rows);
-      console.log(
-        JSON.stringify({
-          event: 'gsc_agent_binding_synced',
-          bindingId: binding.bindingId,
-          siteUrl: binding.siteUrl,
-          rows: rows.length,
-          startDate,
-          endDate,
-        }),
-      );
+      synced.push({ bindingId: binding.bindingId, siteUrl: binding.siteUrl, rows: rows.length });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'GSC_AGENT_BINDING_SYNC_FAILED';
       await heartbeat(env, message);
-      throw error;
+      throw createError({ statusCode: 502, statusMessage: message });
     }
   }
+
+  return {
+    ok: true,
+    due: true,
+    startDate,
+    endDate,
+    synced,
+  };
 }
 
-async function requestLease(env: Env): Promise<AgentLeaseResponse> {
-  const response = await fetch(`${trimTrailingSlash(env.BACKEND_URL)}/gsc/agent/lease`, {
+interface AgentEnv {
+  backendUrl: string;
+  siteId: string;
+  agentId: string;
+  agentSecret: string;
+  serviceAccountJson: string;
+  daysBack: number;
+}
+
+function readAgentEnv(): AgentEnv {
+  const backendUrl = trimTrailingSlash(process.env.BACKEND_URL || '');
+  const siteId = String(process.env.SITE_ID || '').trim();
+  const agentId = String(process.env.GSC_AGENT_ID || '').trim();
+  const agentSecret = String(process.env.GSC_AGENT_SECRET || '').trim();
+  const serviceAccountJson = String(process.env.GSC_SERVICE_ACCOUNT_JSON || '').trim();
+  if (!backendUrl || !siteId || !agentId || !agentSecret || !serviceAccountJson) {
+    throw createError({ statusCode: 503, statusMessage: 'GSC_AGENT_NOT_CONFIGURED' });
+  }
+  return {
+    backendUrl,
+    siteId,
+    agentId,
+    agentSecret,
+    serviceAccountJson,
+    daysBack: clampInt(process.env.GSC_DAYS_BACK, 1, 90, 14),
+  };
+}
+
+async function requestLease(env: AgentEnv): Promise<AgentLeaseResponse> {
+  const response = await fetch(`${env.backendUrl}/gsc/agent/lease`, {
     method: 'POST',
     headers: authHeaders(env),
-    body: JSON.stringify({ websiteId: env.SITE_ID, agentId: env.GSC_AGENT_ID }),
+    body: JSON.stringify({ websiteId: env.siteId, agentId: env.agentId }),
   });
   const payload = await response.json().catch(() => null) as AgentLeaseResponse | { error?: string } | null;
   if (!response.ok) {
-    throw new Error(`GSC_AGENT_LEASE_FAILED: ${payload && 'error' in payload ? payload.error : response.status}`);
+    throw createError({
+      statusCode: 502,
+      statusMessage: `GSC_AGENT_LEASE_FAILED: ${payload && 'error' in payload ? payload.error : response.status}`,
+    });
   }
   return payload as AgentLeaseResponse;
 }
 
 async function ingestDailySummary(
-  env: Env,
+  env: AgentEnv,
   binding: AgentLeaseBinding,
   rows: Array<{ date: string; clicks: number; impressions: number; ctr: number; position: number }>,
 ): Promise<void> {
-  const response = await fetch(`${trimTrailingSlash(env.BACKEND_URL)}/gsc/agent/ingest/daily-summary`, {
+  const response = await fetch(`${env.backendUrl}/gsc/agent/ingest/daily-summary`, {
     method: 'POST',
     headers: authHeaders(env),
     body: JSON.stringify({
-      websiteId: env.SITE_ID,
-      agentId: env.GSC_AGENT_ID,
+      websiteId: env.siteId,
+      agentId: env.agentId,
       bindingId: binding.bindingId,
       siteUrl: binding.siteUrl,
       type: binding.type || 'web',
@@ -132,12 +175,12 @@ async function ingestDailySummary(
   }
 }
 
-async function heartbeat(env: Env, error?: string): Promise<void> {
-  await fetch(`${trimTrailingSlash(env.BACKEND_URL)}/gsc/agent/heartbeat`, {
+async function heartbeat(env: AgentEnv, error?: string): Promise<void> {
+  await fetch(`${env.backendUrl}/gsc/agent/heartbeat`, {
     method: 'POST',
     headers: authHeaders(env),
-    body: JSON.stringify({ websiteId: env.SITE_ID, agentId: env.GSC_AGENT_ID, error: error || null }),
-  });
+    body: JSON.stringify({ websiteId: env.siteId, agentId: env.agentId, error: error || null }),
+  }).catch(() => undefined);
 }
 
 async function queryDailySummary(params: {
@@ -239,29 +282,11 @@ function parseServiceAccount(raw: string): ServiceAccountJson {
   };
 }
 
-function pemToArrayBuffer(pem: string): ArrayBuffer {
-  const base64 = pem
-    .replace('-----BEGIN PRIVATE KEY-----', '')
-    .replace('-----END PRIVATE KEY-----', '')
-    .replace(/\s+/g, '');
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes.buffer;
-}
-
-function base64UrlEncode(input: string | ArrayBuffer): string {
-  const bytes = typeof input === 'string' ? new TextEncoder().encode(input) : new Uint8Array(input);
-  let binary = '';
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-}
-
 function resolveFinalDateRange(daysBack: number): { startDate: string; endDate: string } {
-  const end = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
-  const start = new Date(Date.now() - (daysBack + 3) * 24 * 60 * 60 * 1000);
+  const end = new Date();
+  end.setUTCDate(end.getUTCDate() - 3);
+  const start = new Date(end);
+  start.setUTCDate(start.getUTCDate() - Math.max(1, daysBack - 1));
   return { startDate: formatDate(start), endDate: formatDate(end) };
 }
 
@@ -269,19 +294,43 @@ function formatDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-function authHeaders(env: Env): HeadersInit {
+function authHeaders(env: AgentEnv): HeadersInit {
   return {
-    Authorization: `Bearer ${env.GSC_AGENT_SECRET}`,
+    Authorization: `Bearer ${env.agentSecret}`,
     'Content-Type': 'application/json',
   };
+}
+
+function extractBearerToken(raw: string | undefined): string {
+  const value = String(raw || '').trim();
+  if (!value.toLowerCase().startsWith('bearer ')) return '';
+  return value.slice(7).trim();
+}
+
+function clampInt(value: unknown, min: number, max: number, fallback: number): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(max, Math.max(min, Math.floor(parsed)));
 }
 
 function trimTrailingSlash(value: string): string {
   return String(value || '').replace(/\/+$/, '');
 }
 
-function clampInt(value: string | undefined, min: number, max: number, fallback: number): number {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  return Math.min(max, Math.max(min, Math.floor(parsed)));
+function base64UrlEncode(input: string | ArrayBuffer): string {
+  const bytes = typeof input === 'string' ? new TextEncoder().encode(input) : new Uint8Array(input);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function pemToArrayBuffer(pem: string): ArrayBuffer {
+  const base64 = pem
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/\s+/g, '');
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
 }
