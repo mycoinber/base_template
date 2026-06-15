@@ -152,12 +152,18 @@ function readAgentEnv(
 ): { ok: true; value: AgentEnv } | { ok: false; error: string; missing: string[] } {
   const config = useRuntimeConfig(event);
   const backendUrl = trimTrailingSlash(
-    process.env.BACKEND_URL || config.server?.backHost || config.public?.backHost || '',
+    process.env.GSC_BACKEND_URL ||
+      config.server?.gscBackendUrl ||
+      config.public?.gscBackendUrl ||
+      process.env.BACKEND_URL ||
+      config.server?.backHost ||
+      config.public?.backHost ||
+      '',
   );
   const siteId = String(body.websiteId || process.env.SITE_ID || config.server?.siteId || config.public?.siteId || '').trim();
   const agentId = String(body.agentId || process.env.GSC_AGENT_ID || '').trim();
   const missing = [
-    !backendUrl ? 'BACKEND_URL' : '',
+    !backendUrl ? 'GSC_BACKEND_URL' : '',
     !siteId ? 'SITE_ID' : '',
     !agentId ? 'GSC_AGENT_ID' : '',
   ].filter(Boolean);

@@ -18,6 +18,7 @@ const toOrigin = (value?: string | null) => {
 const SITE_ID = (process.env.SITE_ID || "").trim();
 const MEDIA_STORAGE_URL = (process.env.MEDIA_STORAGE_URL || "").trim();
 const BACKEND_BASE_URL = normalizeBaseUrl(process.env.BACKEND_URL);
+const GSC_BACKEND_URL = normalizeBaseUrl(process.env.GSC_BACKEND_URL);
 const CSS_SLUG = (process.env.SLUG || "site").trim() || "site";
 const SITE_URL = normalizeBaseUrl(process.env.SITE_URL);
 const SITE_NAME = (process.env.SITE_NAME || "").trim();
@@ -135,6 +136,7 @@ export default defineNuxtConfig({
       mediaStorageUrl: MEDIA_STORAGE_URL || undefined,
       sitemapApiBase: BACKEND_BASE_URL,
       backHost: BACKEND_BASE_URL || undefined,
+      gscBackendUrl: GSC_BACKEND_URL || undefined,
       vercelAnalytics:
         process.env.VERCEL === "1" || process.env.VERCEL === "true",
       siteUrl: SITE_URL || undefined,
@@ -147,6 +149,7 @@ export default defineNuxtConfig({
       sitemapApiBase: BACKEND_BASE_URL,
       siteUrl: SITE_URL || undefined,
       siteName: SITE_NAME || undefined,
+      gscBackendUrl: GSC_BACKEND_URL || undefined,
     },
   },
   plugins: ["~/plugins/vue-query.ts"],
