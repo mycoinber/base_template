@@ -151,17 +151,19 @@ function readAgentEnv(
   token: string,
 ): { ok: true; value: AgentEnv } | { ok: false; error: string; missing: string[] } {
   const config = useRuntimeConfig(event);
+  const runtimeGscBackendUrl = readRuntimeEnv(event, 'GSC_BACKEND_URL');
+  const runtimeBackendUrl = readRuntimeEnv(event, 'BACKEND_URL');
   const backendUrl = trimTrailingSlash(
-    process.env.GSC_BACKEND_URL ||
+    runtimeGscBackendUrl ||
       config.server?.gscBackendUrl ||
       config.public?.gscBackendUrl ||
-      process.env.BACKEND_URL ||
+      runtimeBackendUrl ||
       config.server?.backHost ||
       config.public?.backHost ||
       '',
   );
-  const siteId = String(body.websiteId || process.env.SITE_ID || config.server?.siteId || config.public?.siteId || '').trim();
-  const agentId = String(body.agentId || process.env.GSC_AGENT_ID || '').trim();
+  const siteId = String(body.websiteId || readRuntimeEnv(event, 'SITE_ID') || config.server?.siteId || config.public?.siteId || '').trim();
+  const agentId = String(body.agentId || readRuntimeEnv(event, 'GSC_AGENT_ID') || '').trim();
   const missing = [
     !backendUrl ? 'GSC_BACKEND_URL' : '',
     !siteId ? 'SITE_ID' : '',
@@ -175,7 +177,7 @@ function readAgentEnv(
     siteId,
     agentId,
     token,
-    daysBack: clampInt(process.env.GSC_DAYS_BACK, 1, 90, 14),
+    daysBack: clampInt(readRuntimeEnv(event, 'GSC_DAYS_BACK'), 1, 90, 14),
   } };
 }
 
@@ -359,6 +361,14 @@ function clampInt(value: unknown, min: number, max: number, fallback: number): n
 
 function trimTrailingSlash(value: string): string {
   return String(value || '').replace(/\/+$/, '');
+}
+
+function readRuntimeEnv(event: any, key: string): string {
+  const cfEnv =
+    event?.context?.cloudflare?.env ||
+    event?.context?.cloudflare?.context?.env ||
+    {};
+  return String(process.env[key] || cfEnv[key] || '').trim();
 }
 
 function base64UrlEncode(input: string | ArrayBuffer): string {
