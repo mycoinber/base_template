@@ -33,7 +33,13 @@ const slug = slugArray.length ? slugArray.join("/") : "";
 const { data, status, error } = await usePageData(siteId, slug);
 
 if (error.value) {
-  throw error.value;
+  if (import.meta.server && Number(error.value.statusCode) === 404) {
+    await navigateTo("/", {
+      redirectCode: 301,
+    });
+  } else {
+    throw error.value;
+  }
 }
 
 const normalizeRequestSlug = (value) => {

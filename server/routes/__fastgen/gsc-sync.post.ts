@@ -6,6 +6,7 @@ import {
   setHeader,
   setResponseStatus,
 } from 'h3';
+import { runFastgenSecurityCheck } from '../../utils/fastgen-security';
 
 interface ServiceAccountJson {
   client_email: string;
@@ -69,10 +70,19 @@ export default defineEventHandler(async (event) => {
 
   try {
     const result = await runAgentSync(env.value);
+    const security = await runFastgenSecurityCheck(event, env.value).catch((error) => ({
+      ok: false,
+      status: 'error',
+      errorCode: 'SECURITY_CHECK_FAILED',
+      errorMessage: error instanceof Error ? error.message : 'SECURITY_CHECK_FAILED',
+    }));
     if (!result.due) {
       setResponseStatus(event, 202);
     }
-    return result;
+    return {
+      ...result,
+      security,
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'GSC_AGENT_SYNC_FAILED';
     const statusCode = error instanceof AgentRouteError ? error.statusCode : 502;
@@ -105,7 +115,7 @@ async function runAgentSync(env: AgentEnv) {
 
   const serviceAccount = parseServiceAccount(lease.serviceAccountJson);
   const accessToken = await getAccessToken(serviceAccount);
-  const daysBack = clampInt(env.daysBack, 1, 90, 14);
+  const daysBack = clampInt(env.daysBack, 1, 90, 90);
   const { startDate, endDate } = resolveFinalDateRange(daysBack);
   const synced: Array<{ bindingId: string; siteUrl: string; rows: number }> = [];
 
@@ -177,7 +187,7 @@ function readAgentEnv(
     siteId,
     agentId,
     token,
-    daysBack: clampInt(readRuntimeEnv(event, 'GSC_DAYS_BACK'), 1, 90, 14),
+    daysBack: clampInt(readRuntimeEnv(event, 'GSC_DAYS_BACK'), 1, 90, 90),
   } };
 }
 

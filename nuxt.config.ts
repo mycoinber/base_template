@@ -19,6 +19,7 @@ const SITE_ID = (process.env.SITE_ID || "").trim();
 const MEDIA_STORAGE_URL = (process.env.MEDIA_STORAGE_URL || "").trim();
 const BACKEND_BASE_URL = normalizeBaseUrl(process.env.BACKEND_URL);
 const GSC_BACKEND_URL = normalizeBaseUrl(process.env.GSC_BACKEND_URL);
+const SAFE_BROWSING_API_KEY = (process.env.SAFE_BROWSING_API_KEY || "").trim();
 const CSS_SLUG = (process.env.SLUG || "site").trim() || "site";
 const SITE_URL = normalizeBaseUrl(process.env.SITE_URL);
 const SITE_NAME = (process.env.SITE_NAME || "").trim();
@@ -150,6 +151,7 @@ export default defineNuxtConfig({
       siteUrl: SITE_URL || undefined,
       siteName: SITE_NAME || undefined,
       gscBackendUrl: GSC_BACKEND_URL || undefined,
+      safeBrowsingApiKey: SAFE_BROWSING_API_KEY || undefined,
     },
   },
   plugins: ["~/plugins/vue-query.ts"],
