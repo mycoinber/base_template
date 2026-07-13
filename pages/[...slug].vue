@@ -502,6 +502,23 @@ const schemaNodes = computed(() => {
 });
 
 // === Универсальный headMeta с поддержкой robots.metaTags ===
+const isRobotsMeta = (entry) => {
+  const name = entry?.name ?? (entry?.type === "name" ? entry?.key : null);
+  return typeof name === "string" && name.trim().toLowerCase() === "robots";
+};
+
+const normalizeHeadMetaEntry = (entry) => {
+  const attrName = entry?.type === "property" ? "property" : entry?.type === "httpEquiv" ? "httpEquiv" : "name";
+  const attrValue = entry?.[attrName] ?? entry?.key;
+  const normalizedValue = attrValue != null ? String(attrValue).trim() : "";
+  if (!attrName || !normalizedValue) return null;
+  const normalized = { [attrName]: normalizedValue };
+  const content = toContentString(entry?.content ?? entry?.value);
+  if (content !== undefined) normalized.content = content;
+  if (entry?.key != null) normalized.key = String(entry.key);
+  return normalized;
+};
+
 const headMeta = computed(() => {
   const baseMeta = [
     { name: "description", content: toContentString(pageHead.value.description) },
@@ -529,37 +546,33 @@ const headMeta = computed(() => {
   const manifestMetaEntries = manifestHead.value.meta || [];
   const robotsMetaTags = Array.isArray(data.value?.robots?.metaTags) ? data.value.robots.metaTags : [];
 
-  let robotsMeta = metaArray.find(m => m.key === "robots" && m.type === "name")
-    || robotsMetaTags.find(m => m.name === "robots");
+  const robotsContent = toContentString(pageHead.value.robots);
+  let robotsMeta = robotsContent
+    ? { name: "robots", content: robotsContent }
+    : metaArray.find(isRobotsMeta)
+      || robotsMetaTags.find(isRobotsMeta);
 
-  const metaWithoutRobots = metaArray.filter(m => m.key !== "robots");
-  const robotsOtherMeta = robotsMetaTags.filter(m => m.name !== "robots");
+  const metaWithoutRobots = metaArray.filter(m => !isRobotsMeta(m));
+  const robotsOtherMeta = robotsMetaTags.filter(m => !isRobotsMeta(m));
 
   const manifestNames = manifestMetaEntries
     .map(entry => entry?.name)
     .filter(Boolean);
 
   const usedNames = new Set([
-    ...metaWithoutRobots.map(m => m.key),
+    ...metaWithoutRobots.map(m => m.name ?? m.key),
     ...manifestNames,
     ...(globalMeta.map(m => m.name).filter(Boolean)),
   ]);
   const robotsOtherMetaFiltered = robotsOtherMeta.filter(m => !usedNames.has(m.name));
 
   const pageMetaEntries = metaWithoutRobots
-    .map(m => {
-      const attrName = m?.type === "property" ? "property" : m?.type === "httpEquiv" ? "httpEquiv" : "name";
-      const attrValue = m?.key != null ? String(m.key) : "";
-      if (!attrName || !attrValue) return null;
-      const entry = { [attrName]: attrValue };
-      const content = toContentString(m?.content);
-      if (content !== undefined) entry.content = content;
-      return entry;
-    })
+    .map(normalizeHeadMetaEntry)
     .filter(Boolean);
 
   const robotsEntry = robotsMeta
     ? [{
+        key: "robots",
         name: "robots",
         content: toContentString(robotsMeta.content ?? robotsMeta.value),
       }].filter(item => item.content !== undefined)
