@@ -74,17 +74,29 @@ const pagePrimaryLang = computed(() => data.value?.primaryLang || null);
 const pageLang = computed(() => data.value?.lang || pagePrimaryLang.value || "en");
 const pageDomain = computed(() => data.value?.domain || siteDomain);
 const isHomePage = computed(() => Number(data.value?.homePage) === 1);
-const pageSlug = computed(() => (
-  isHomePage.value ? "" : normalizeSlugForPath(data.value?.slug || slug || "")
+const isRootHomePage = computed(() => isHomePage.value && !data.value?.localePrefix);
+const currentSlugValue = computed(() => (
+  isRootHomePage.value ? "" : normalizeSlugForPath(data.value?.fullSlug || data.value?.slug || slug || "")
 ));
+const pageSlug = computed(() => currentSlugValue.value);
 const canonicalSlugValue = computed(() => (
   isHomePage.value
     ? ""
     : normalizeSlugForPath(data.value?.canonicalSlug || data.value?.slug || slug || "")
 ));
+const canonicalPathValue = computed(() => (
+  isRootHomePage.value ? "" : normalizeSlugForPath(data.value?.fullSlug || data.value?.slug || slug || "")
+));
 const pageUrl = computed(() => buildAbsoluteHref(pageDomain.value, pageSlug.value));
 
-const canonicalHref = computed(() => buildAbsoluteHref(pageDomain.value, pageSlug.value));
+const canonicalHref = computed(() => {
+  const explicitCanonical = typeof pageHead.value?.canonicalUrl === "string"
+    ? pageHead.value.canonicalUrl.trim()
+    : typeof pageHead.value?.canonical === "string"
+      ? pageHead.value.canonical.trim()
+      : "";
+  return explicitCanonical || buildAbsoluteHref(pageDomain.value, canonicalPathValue.value);
+});
 
 const normalizeSiteUrl = (value) => {
   if (!value) return "";
@@ -278,15 +290,30 @@ const normalizedAlters = computed(() => {
   return alters
     .map((alter) => {
       const slugValue = normalizeSlugForPath(alter?.slug);
+      const fullSlugValue = normalizeSlugForPath(alter?.fullSlug);
       const hreflangValue = typeof alter?.hreflang === "string" ? alter.hreflang.trim() : "";
       if (!slugValue || !hreflangValue) return null;
-      return { slug: slugValue, hreflang: hreflangValue };
+      return {
+        slug: slugValue,
+        fullSlug: fullSlugValue,
+        hreflang: hreflangValue,
+        isDefault: Boolean(alter?.isDefault),
+      };
     })
     .filter((entry) => Boolean(entry && entry.slug && entry.hreflang));
 });
 
-const buildAlternateHref = (langSlug = "") => {
-  const prefix = normalizeSlugForPath(langSlug);
+const buildAlternateHref = (alterOrSlug = "") => {
+  const fullSlug = typeof alterOrSlug === "object" && alterOrSlug
+    ? normalizeSlugForPath(alterOrSlug.fullSlug)
+    : "";
+  if (fullSlug) {
+    return buildAbsoluteHref(siteDomain, fullSlug);
+  }
+
+  const prefix = typeof alterOrSlug === "object" && alterOrSlug
+    ? normalizeSlugForPath(alterOrSlug.slug)
+    : normalizeSlugForPath(alterOrSlug);
   const segments = [];
   if (prefix) segments.push(prefix);
   if (canonicalSlugValue.value) segments.push(canonicalSlugValue.value);
@@ -306,16 +333,18 @@ const alternateLinks = computed(() => {
   }
 
   for (const alter of normalizedAlters.value) {
-    const href = buildAlternateHref(alter.slug);
+    const href = buildAlternateHref(alter);
     const key = `${alter.hreflang}-${href}`;
     if (seen.has(key)) continue;
     seen.add(key);
     links.push({ rel: "alternate", hreflang: alter.hreflang, href });
   }
 
-  const xDefaultKey = `x-default-${defaultHref}`;
+  const defaultAlter = normalizedAlters.value.find((alter) => alter.isDefault);
+  const xDefaultHref = defaultAlter ? buildAlternateHref(defaultAlter) : defaultHref;
+  const xDefaultKey = `x-default-${xDefaultHref}`;
   if (!seen.has(xDefaultKey)) {
-    links.push({ rel: "alternate", hreflang: "x-default", href: defaultHref });
+    links.push({ rel: "alternate", hreflang: "x-default", href: xDefaultHref });
     seen.add(xDefaultKey);
   }
 
