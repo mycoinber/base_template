@@ -74,12 +74,21 @@ const pagePrimaryLang = computed(() => data.value?.primaryLang || null);
 const pageLang = computed(() => resolveActivePageLang());
 const pageDomain = computed(() => data.value?.domain || siteDomain);
 const isHomePage = computed(() => Number(data.value?.homePage) === 1);
-const isRootHomePage = computed(() => isHomePage.value && !data.value?.localePrefix);
-const currentSlugValue = computed(() => (
-  isRootHomePage.value ? "" : normalizeSlugForPath(data.value?.fullSlug || data.value?.slug || slug || "")
-));
+const hasCanonicalPageSlug = computed(() => Boolean(normalizeSlugForPath(data.value?.canonicalSlug)));
+const isVersionHomePage = computed(() => Boolean(data.value?.localePrefix) && !hasCanonicalPageSlug.value);
+const isResolvedHomePage = computed(() => isHomePage.value || isVersionHomePage.value);
+const isRootHomePage = computed(() => isResolvedHomePage.value && !data.value?.localePrefix);
+const currentSlugValue = computed(() => {
+  const prefix = normalizeSlugForPath(data.value?.localePrefix);
+  if (isResolvedHomePage.value) {
+    return prefix;
+  }
+  return normalizeSlugForPath(data.value?.fullSlug || data.value?.slug || slug || "");
+});
 const pageSlug = computed(() => currentSlugValue.value);
 const originalSlugValue = computed(() => {
+  if (isResolvedHomePage.value) return "";
+
   const canonical = normalizeSlugForPath(data.value?.canonicalSlug);
   if (canonical) return canonical;
 
@@ -95,10 +104,61 @@ const canonicalSlugValue = computed(() => (
     ? ""
     : originalSlugValue.value
 ));
-const canonicalPathValue = computed(() => (
-  isRootHomePage.value ? "" : normalizeSlugForPath(data.value?.fullSlug || data.value?.slug || slug || "")
-));
+const canonicalPathValue = computed(() => currentSlugValue.value);
 const pageUrl = computed(() => buildAbsoluteHref(pageDomain.value, pageSlug.value));
+
+const getEntryId = (entry) => {
+  const raw = entry?.id || entry?._id;
+  if (raw && typeof raw === "object") {
+    return raw.id || raw._id || raw.$oid || "";
+  }
+  return raw ? String(raw) : "";
+};
+
+const versionSeoEntries = computed(() => {
+  const versions = Array.isArray(data.value?.versions) ? data.value.versions : [];
+  return versions
+    .map((version) => {
+      const slugValue = normalizeSlugForPath(version?.slug);
+      const hreflangValue = typeof version?.hreflang === "string" ? version.hreflang.trim() : "";
+      const canonicalUrlValue = typeof version?.canonicalUrl === "string" ? version.canonicalUrl.trim() : "";
+      const hreflangUrlValue = typeof version?.hreflangUrl === "string" ? version.hreflangUrl.trim() : "";
+      const ampUrlValue = typeof version?.ampUrl === "string" ? version.ampUrl.trim() : "";
+      if (!slugValue && !hreflangValue) return null;
+      return {
+        id: getEntryId(version),
+        slug: slugValue,
+        hreflang: hreflangValue,
+        canonicalUrl: canonicalUrlValue,
+        hreflangUrl: hreflangUrlValue,
+        ampUrl: ampUrlValue,
+      };
+    })
+    .filter(Boolean);
+});
+
+const findVersionSeoFallback = (entry = {}) => {
+  const entryId = getEntryId(entry);
+  const entrySlug = normalizeSlugForPath(entry?.slug);
+  const entryHreflang = typeof entry?.hreflang === "string" ? entry.hreflang.trim().toLowerCase() : "";
+
+  return versionSeoEntries.value.find((version) => {
+    if (entryId && version.id && entryId === version.id) return true;
+    if (entrySlug && version.slug && entrySlug === version.slug) return true;
+    return Boolean(entryHreflang && version.hreflang && entryHreflang === version.hreflang.toLowerCase());
+  }) || null;
+};
+
+const activeVersionSeo = computed(() => {
+  const current = currentSlugValue.value;
+  const prefix = normalizeSlugForPath(data.value?.localePrefix);
+  if (!current && !prefix) return null;
+
+  return versionSeoEntries.value.find((version) => {
+    if (prefix && version.slug === prefix) return true;
+    return Boolean(version.slug && current && (current === version.slug || current.startsWith(`${version.slug}/`)));
+  }) || null;
+});
 
 const canonicalHref = computed(() => {
   const explicitCanonical = typeof pageHead.value?.canonicalUrl === "string"
@@ -106,7 +166,38 @@ const canonicalHref = computed(() => {
     : typeof pageHead.value?.canonical === "string"
       ? pageHead.value.canonical.trim()
       : "";
-  return explicitCanonical || buildAbsoluteHref(pageDomain.value, canonicalPathValue.value);
+  const versionCanonical = typeof activeVersionSeo.value?.canonicalUrl === "string"
+    ? activeVersionSeo.value.canonicalUrl.trim()
+    : "";
+  return explicitCanonical || versionCanonical || buildAbsoluteHref(pageDomain.value, canonicalPathValue.value);
+});
+
+const ampHref = computed(() => {
+  const explicitAmp = typeof pageHead.value?.ampUrl === "string"
+    ? pageHead.value.ampUrl.trim()
+    : typeof pageHead.value?.amp === "string"
+      ? pageHead.value.amp.trim()
+      : "";
+  const versionAmp = typeof activeVersionSeo.value?.ampUrl === "string"
+    ? activeVersionSeo.value.ampUrl.trim()
+    : "";
+  const rawAmp = explicitAmp || versionAmp;
+  if (!rawAmp) return "";
+  return /^https?:\/\//i.test(rawAmp)
+    ? rawAmp
+    : buildAbsoluteHref(pageDomain.value, rawAmp);
+});
+
+const originalHreflangHref = computed(() => {
+  const explicitHref = typeof pageHead.value?.hreflangUrl === "string"
+    ? pageHead.value.hreflangUrl.trim()
+    : typeof pageHead.value?.hreflangHref === "string"
+      ? pageHead.value.hreflangHref.trim()
+      : "";
+  if (!explicitHref) return "";
+  return /^https?:\/\//i.test(explicitHref)
+    ? explicitHref
+    : buildAbsoluteHref(siteDomain, explicitHref);
 });
 
 const normalizeSiteUrl = (value) => {
@@ -300,14 +391,28 @@ const normalizedAlters = computed(() => {
   const alters = Array.isArray(data.value?.alters) ? data.value.alters : [];
   return alters
     .map((alter) => {
+      const versionSeo = findVersionSeoFallback(alter);
       const slugValue = normalizeSlugForPath(alter?.slug);
-      const fullSlugValue = normalizeSlugForPath(alter?.fullSlug);
+      const rawFullSlugValue = normalizeSlugForPath(alter?.fullSlug);
+      const fullSlugValue = isResolvedHomePage.value ? slugValue : rawFullSlugValue;
       const hreflangValue = typeof alter?.hreflang === "string" ? alter.hreflang.trim() : "";
+      const hreflangUrlValue = typeof alter?.hreflangUrl === "string" && alter.hreflangUrl.trim()
+        ? alter.hreflangUrl.trim()
+        : versionSeo?.hreflangUrl || "";
+      const canonicalUrlValue = typeof alter?.canonicalUrl === "string" && alter.canonicalUrl.trim()
+        ? alter.canonicalUrl.trim()
+        : versionSeo?.canonicalUrl || "";
+      const ampUrlValue = typeof alter?.ampUrl === "string" && alter.ampUrl.trim()
+        ? alter.ampUrl.trim()
+        : versionSeo?.ampUrl || "";
       if (!slugValue || !hreflangValue) return null;
       return {
         slug: slugValue,
         fullSlug: fullSlugValue,
         hreflang: hreflangValue,
+        canonicalUrl: canonicalUrlValue,
+        hreflangUrl: hreflangUrlValue,
+        ampUrl: ampUrlValue,
         isDefault: Boolean(alter?.isDefault),
       };
     })
@@ -335,6 +440,19 @@ function resolveActivePageLang() {
 }
 
 const buildAlternateHref = (alterOrSlug = "") => {
+  if (!alterOrSlug && originalHreflangHref.value) {
+    return originalHreflangHref.value;
+  }
+
+  const explicitHref = typeof alterOrSlug === "object" && alterOrSlug
+    ? (typeof alterOrSlug.hreflangUrl === "string" ? alterOrSlug.hreflangUrl.trim() : "")
+    : "";
+  if (explicitHref) {
+    return /^https?:\/\//i.test(explicitHref)
+      ? explicitHref
+      : buildAbsoluteHref(siteDomain, normalizeSlugForPath(explicitHref));
+  }
+
   const fullSlug = typeof alterOrSlug === "object" && alterOrSlug
     ? normalizeSlugForPath(alterOrSlug.fullSlug)
     : "";
@@ -666,6 +784,7 @@ const headLinks = computed(() => {
   const manifestLinks = manifestHead.value.link || [];
   const combined = [
     { key: "canonical", rel: "canonical", href: canonicalHref.value },
+    ampHref.value ? { key: "amphtml", rel: "amphtml", href: ampHref.value } : null,
     ...alternateLinks.value,
     ...manifestLinks,
     ...(globalHead.link || []),
