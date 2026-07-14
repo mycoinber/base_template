@@ -340,7 +340,7 @@ const alternateLinks = computed(() => {
     links.push({ key: `alternate-${alter.hreflang}`, rel: "alternate", hreflang: alter.hreflang, href });
   }
 
-  const defaultAlter = normalizedAlters.value.find((alter) => alter.isDefault);
+  const defaultAlter = normalizedAlters.value.find((alter) => alter.isDefault && alter.hreflang);
   const xDefaultHref = defaultAlter ? buildAlternateHref(defaultAlter) : defaultHref;
   const xDefaultKey = `x-default-${xDefaultHref}`;
   if (!seen.has(xDefaultKey)) {
