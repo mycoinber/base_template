@@ -71,7 +71,7 @@ const manifestHead = computed(() => manifestToHead(siteManifestRaw.value));
 
 const pageHead = computed(() => data.value?.head || {});
 const pagePrimaryLang = computed(() => data.value?.primaryLang || null);
-const pageLang = computed(() => data.value?.lang || pagePrimaryLang.value || "en");
+const pageLang = computed(() => resolveActivePageLang());
 const pageDomain = computed(() => data.value?.domain || siteDomain);
 const isHomePage = computed(() => Number(data.value?.homePage) === 1);
 const isRootHomePage = computed(() => isHomePage.value && !data.value?.localePrefix);
@@ -79,10 +79,21 @@ const currentSlugValue = computed(() => (
   isRootHomePage.value ? "" : normalizeSlugForPath(data.value?.fullSlug || data.value?.slug || slug || "")
 ));
 const pageSlug = computed(() => currentSlugValue.value);
+const originalSlugValue = computed(() => {
+  const canonical = normalizeSlugForPath(data.value?.canonicalSlug);
+  if (canonical) return canonical;
+
+  const current = normalizeSlugForPath(data.value?.fullSlug || data.value?.slug || slug || "");
+  const prefix = normalizeSlugForPath(data.value?.localePrefix);
+  if (prefix && (current === prefix || current.startsWith(`${prefix}/`))) {
+    return current.slice(prefix.length).replace(/^\/+/g, "");
+  }
+  return isRootHomePage.value ? "" : current;
+});
 const canonicalSlugValue = computed(() => (
-  isHomePage.value
+  isRootHomePage.value
     ? ""
-    : normalizeSlugForPath(data.value?.canonicalSlug || data.value?.slug || slug || "")
+    : originalSlugValue.value
 ));
 const canonicalPathValue = computed(() => (
   isRootHomePage.value ? "" : normalizeSlugForPath(data.value?.fullSlug || data.value?.slug || slug || "")
@@ -302,6 +313,26 @@ const normalizedAlters = computed(() => {
     })
     .filter((entry) => Boolean(entry && entry.slug && entry.hreflang));
 });
+
+function resolveActiveAlternate() {
+  const current = currentSlugValue.value;
+  const prefix = normalizeSlugForPath(data.value?.localePrefix);
+  if (!current && !prefix) return null;
+
+  return normalizedAlters.value.find((alter) => {
+    if (alter.fullSlug && alter.fullSlug === current) return true;
+    if (prefix && alter.slug === prefix) return true;
+    return Boolean(alter.slug && current && (current === alter.slug || current.startsWith(`${alter.slug}/`)));
+  }) || null;
+}
+
+function resolveActivePageLang() {
+  const activeAlter = resolveActiveAlternate();
+  if (activeAlter?.hreflang) return activeAlter.hreflang;
+
+  const explicitLang = typeof data.value?.lang === "string" ? data.value.lang.trim() : "";
+  return explicitLang || pagePrimaryLang.value || "en";
+}
 
 const buildAlternateHref = (alterOrSlug = "") => {
   const fullSlug = typeof alterOrSlug === "object" && alterOrSlug
