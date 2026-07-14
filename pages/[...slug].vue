@@ -328,7 +328,7 @@ const alternateLinks = computed(() => {
   const seen = new Set();
 
   if (primaryLang) {
-    links.push({ rel: "alternate", hreflang: primaryLang, href: defaultHref });
+    links.push({ key: `alternate-${primaryLang}`, rel: "alternate", hreflang: primaryLang, href: defaultHref });
     seen.add(`${primaryLang}-${defaultHref}`);
   }
 
@@ -337,14 +337,14 @@ const alternateLinks = computed(() => {
     const key = `${alter.hreflang}-${href}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    links.push({ rel: "alternate", hreflang: alter.hreflang, href });
+    links.push({ key: `alternate-${alter.hreflang}`, rel: "alternate", hreflang: alter.hreflang, href });
   }
 
   const defaultAlter = normalizedAlters.value.find((alter) => alter.isDefault);
   const xDefaultHref = defaultAlter ? buildAlternateHref(defaultAlter) : defaultHref;
   const xDefaultKey = `x-default-${xDefaultHref}`;
   if (!seen.has(xDefaultKey)) {
-    links.push({ rel: "alternate", hreflang: "x-default", href: xDefaultHref });
+    links.push({ key: "alternate-x-default", rel: "alternate", hreflang: "x-default", href: xDefaultHref });
     seen.add(xDefaultKey);
   }
 
@@ -634,7 +634,7 @@ const headMeta = computed(() => {
 const headLinks = computed(() => {
   const manifestLinks = manifestHead.value.link || [];
   const combined = [
-    { rel: "canonical", href: canonicalHref.value },
+    { key: "canonical", rel: "canonical", href: canonicalHref.value },
     ...alternateLinks.value,
     ...manifestLinks,
     ...(globalHead.link || []),
