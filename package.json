@@ -4,7 +4,9 @@
   "type": "module",
   "packageManager": "pnpm@9.12.0",
   "scripts": {
-    "prebuild": "node ./scripts/fetch-manifest.mjs",
+    "prepare:offer-layout": "node ./scripts/fetch-offer-layout.mjs",
+    "predev": "pnpm run prepare:offer-layout",
+    "prebuild": "pnpm run prepare:offer-layout && node ./scripts/fetch-manifest.mjs",
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",

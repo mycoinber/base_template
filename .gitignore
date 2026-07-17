@@ -1,35 +1,9 @@
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
-
-# testing
-/coverage
-
-# production
-/build
-/dist
-/node_modules
-/public/*
-/.nuxt
-/.output
-/.wrangler
-
-# misc
 .DS_Store
 .env
-.env.*
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-package-lock.json
-
-# editor directories and files
-.idea
-.vscode
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+.fastgen/
+.nuxt/
+.output/
+.wrangler/
+dist/
+node_modules/
+public/
