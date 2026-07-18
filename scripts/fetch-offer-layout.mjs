@@ -13,6 +13,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(here, "..");
 const generatedRoot = join(projectRoot, ".fastgen");
 const targetDir = join(generatedRoot, "offer-layout");
+const checksumPath = join(generatedRoot, "offer-layout.sha256");
+const buildCacheDirs = [join(projectRoot, ".nuxt"), join(projectRoot, ".output")];
 
 loadEnvFile(join(projectRoot, ".env"));
 
@@ -23,6 +25,8 @@ const expectedChecksum = (process.env.OFFER_LAYOUT_SHA256 || "").trim().toLowerC
 
 if (!layoutName && !archiveUrl && !archivePathValue) {
   await rm(targetDir, { recursive: true, force: true });
+  await rm(checksumPath, { force: true });
+  await invalidateBuildCache();
   console.log("[offer-layout] No layout configured; using default layout.");
   process.exit(0);
 }
@@ -66,7 +70,13 @@ if (manifest.id !== layoutName || manifest.layout !== layoutName) {
 
 await rm(targetDir, { recursive: true, force: true });
 await rename(stagingDir, targetDir);
-console.log(`[offer-layout] ${layoutName} extracted to ${targetDir}.`);
+await writeFile(checksumPath, `${actualChecksum}\n`, "utf8");
+await invalidateBuildCache();
+console.log(`[offer-layout] ${layoutName} (${actualChecksum.slice(0, 12)}) extracted to ${targetDir}; Nuxt build cache cleared.`);
+
+async function invalidateBuildCache() {
+  await Promise.all(buildCacheDirs.map((directory) => rm(directory, { recursive: true, force: true })));
+}
 
 async function downloadArchive(url) {
   if (!/^https:\/\//i.test(url)) {
