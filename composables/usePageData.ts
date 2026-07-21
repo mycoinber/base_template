@@ -197,6 +197,7 @@ export function usePageData(siteId: string, slug: string | null) {
   const currentOfferData = useState<any | null>("currentOfferData", () => null);
   const currentHeaderOfferData = useState<any | null>("currentHeaderOfferData", () => null);
   const currentFooterOfferData = useState<any | null>("currentFooterOfferData", () => null);
+  const layoutOfferId = computed(() => String(useRuntimeConfig().public.offerLayoutOfferId || "").trim());
   const isLayoutOfferActive = computed(() =>
     Boolean(String(useRuntimeConfig().public.offerLayoutName || "").trim()),
   );
@@ -205,19 +206,23 @@ export function usePageData(siteId: string, slug: string | null) {
     return String(kind || "").trim().toLowerCase() === "layout";
   };
   watch(
-    () => asyncData.data.value?.offers,
-    (offers) => {
+    [() => asyncData.data.value?.offers, isLayoutOfferActive, layoutOfferId],
+    ([offers]) => {
+      const allOffers = Array.isArray(offers) ? offers : [];
+      const layoutOffer = allOffers.find((entry) => isLayoutOffer(entry)) || null;
       const list = isLayoutOfferActive.value
         ? []
-        : (Array.isArray(offers) ? offers : []).filter((entry) => !isLayoutOffer(entry));
+        : allOffers.filter((entry) => !isLayoutOffer(entry));
       const hero = list.find((entry) => entry?.placement === "hero") || null;
       const header = list.find((entry) => entry?.placement === "header") || null;
       const footer = list.find((entry) => entry?.placement === "footer") || null;
-      const id = hero?.offer || hero?.data?.id || null;
+      const id = isLayoutOfferActive.value
+        ? layoutOfferId.value || layoutOffer?.offer || layoutOffer?.data?.id || null
+        : hero?.offer || hero?.data?.id || null;
       currentOfferId.value = id || null;
-      currentOfferData.value = hero?.data || null;
-      currentHeaderOfferData.value = header?.data || null;
-      currentFooterOfferData.value = footer?.data || null;
+      currentOfferData.value = isLayoutOfferActive.value ? layoutOffer?.data || null : hero?.data || null;
+      currentHeaderOfferData.value = isLayoutOfferActive.value ? null : header?.data || null;
+      currentFooterOfferData.value = isLayoutOfferActive.value ? null : footer?.data || null;
     },
     { immediate: true },
   );

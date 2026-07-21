@@ -27,6 +27,7 @@ const CSS_SLUG = (process.env.SLUG || "site").trim() || "site";
 const SITE_URL = normalizeBaseUrl(process.env.SITE_URL);
 const SITE_NAME = (process.env.SITE_NAME || "").trim();
 const OFFER_LAYOUT_NAME = (process.env.OFFER_LAYOUT_NAME || "").trim();
+const OFFER_LAYOUT_OFFER_ID = (process.env.OFFER_LAYOUT_OFFER_ID || "").trim();
 const OFFER_LAYOUT_DIR = resolve(process.cwd(), ".fastgen", "offer-layout");
 const HAS_OFFER_LAYOUT = Boolean(OFFER_LAYOUT_NAME && existsSync(join(OFFER_LAYOUT_DIR, "nuxt.config.ts")));
 
@@ -154,6 +155,7 @@ export default defineNuxtConfig({
       siteUrl: SITE_URL || undefined,
       siteName: SITE_NAME || undefined,
       offerLayoutName: HAS_OFFER_LAYOUT ? OFFER_LAYOUT_NAME : "",
+      offerLayoutOfferId: HAS_OFFER_LAYOUT ? OFFER_LAYOUT_OFFER_ID : "",
     },
     server: {
       siteId: SITE_ID,

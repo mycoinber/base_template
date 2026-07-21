@@ -13,7 +13,10 @@ const normalizeOfferId = (value: unknown) => {
 };
 
 export function useOfferNavigation(offerId?: OfferIdSource) {
-  const resolvedOfferId = computed(() => normalizeOfferId(unref(offerId)));
+  const currentOfferId = useState<string | null>("currentOfferId", () => null);
+  const resolvedOfferId = computed(() => (
+    normalizeOfferId(unref(offerId)) || normalizeOfferId(currentOfferId.value)
+  ));
 
   const offerUrl = computed(() => (
     resolvedOfferId.value ? `/go/offer/${encodeURIComponent(resolvedOfferId.value)}` : ""
