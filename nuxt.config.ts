@@ -1,3 +1,6 @@
+import { existsSync } from "node:fs";
+import { join, resolve } from "node:path";
+
 const normalizeBaseUrl = (value?: string | null) => {
   if (!value) {
     return "";
@@ -23,8 +26,16 @@ const SAFE_BROWSING_API_KEY = (process.env.SAFE_BROWSING_API_KEY || "").trim();
 const CSS_SLUG = (process.env.SLUG || "site").trim() || "site";
 const SITE_URL = normalizeBaseUrl(process.env.SITE_URL);
 const SITE_NAME = (process.env.SITE_NAME || "").trim();
+const OFFER_LAYOUT_NAME = (process.env.OFFER_LAYOUT_NAME || "").trim();
+const OFFER_LAYOUT_DIR = resolve(process.cwd(), ".fastgen", "offer-layout");
+const HAS_OFFER_LAYOUT = Boolean(OFFER_LAYOUT_NAME && existsSync(join(OFFER_LAYOUT_DIR, "nuxt.config.ts")));
+
+if (OFFER_LAYOUT_NAME && !HAS_OFFER_LAYOUT) {
+  throw new Error(`Offer layout '${OFFER_LAYOUT_NAME}' was configured but not prepared.`);
+}
 
 export default defineNuxtConfig({
+  extends: HAS_OFFER_LAYOUT ? [OFFER_LAYOUT_DIR] : [],
   devtools: { enabled: false },
   ssr: true,
   experimental: {
@@ -142,6 +153,7 @@ export default defineNuxtConfig({
         process.env.VERCEL === "1" || process.env.VERCEL === "true",
       siteUrl: SITE_URL || undefined,
       siteName: SITE_NAME || undefined,
+      offerLayoutName: HAS_OFFER_LAYOUT ? OFFER_LAYOUT_NAME : "",
     },
     server: {
       siteId: SITE_ID,

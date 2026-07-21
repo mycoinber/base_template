@@ -1,5 +1,5 @@
 <template>
-  <NuxtLayout>
+  <NuxtLayout :name="layoutName">
     <Analytics v-if="enableAnalytics" />
     <NuxtPage />
   </NuxtLayout>
@@ -12,4 +12,5 @@ const {
   public: { vercelAnalytics },
 } = useRuntimeConfig();
 const enableAnalytics = Boolean(vercelAnalytics);
+const layoutName = computed(() => String(useRuntimeConfig().public.offerLayoutName || "default"));
 </script>
