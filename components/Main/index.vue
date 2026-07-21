@@ -11,6 +11,22 @@ const props = defineProps({
 
 const config = useRuntimeConfig();
 
+const hasOfferLayout = computed(() =>
+  Boolean(String(config.public.offerLayoutName || '').trim()),
+);
+
+const isLayoutOffer = (entry) => {
+  const kind = entry?.kind || entry?.data?.kind || entry?.offer?.kind;
+  return String(kind || '').trim().toLowerCase() === 'layout';
+};
+
+const standardOffers = computed(() => {
+  if (hasOfferLayout.value) return [];
+
+  const offers = Array.isArray(props.data?.offers) ? props.data.offers : [];
+  return offers.filter((entry) => !isLayoutOffer(entry));
+});
+
 const blocks = computed(() =>
   Array.isArray(props.data.article?.blocks) ? props.data.article.blocks : [],
 );
@@ -22,13 +38,11 @@ const introBlock = computed(() =>
 );
 
 const heroOffer = computed(() => {
-  const offers = Array.isArray(props.data?.offers) ? props.data.offers : [];
-  return offers.find((entry) => entry?.placement === 'hero') || null;
+  return standardOffers.value.find((entry) => entry?.placement === 'hero') || null;
 });
 
 const heroOfferList = computed(() => {
-  const offers = Array.isArray(props.data?.offers) ? props.data.offers : [];
-  return offers.filter((entry) => entry?.placement === 'gallery');
+  return standardOffers.value.filter((entry) => entry?.placement === 'gallery');
 });
 
 const heroMedia = computed(() => {

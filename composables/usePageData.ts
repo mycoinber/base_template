@@ -1,7 +1,7 @@
 // composables/usePageData.ts
 import { useNuxtApp, useAsyncData } from "#app";
 import { createError } from "#imports";
-import { watch } from "vue";
+import { computed, watch } from "vue";
 
 type AnyObject = Record<string, any>;
 
@@ -197,10 +197,19 @@ export function usePageData(siteId: string, slug: string | null) {
   const currentOfferData = useState<any | null>("currentOfferData", () => null);
   const currentHeaderOfferData = useState<any | null>("currentHeaderOfferData", () => null);
   const currentFooterOfferData = useState<any | null>("currentFooterOfferData", () => null);
+  const isLayoutOfferActive = computed(() =>
+    Boolean(String(useRuntimeConfig().public.offerLayoutName || "").trim()),
+  );
+  const isLayoutOffer = (entry: any) => {
+    const kind = entry?.kind || entry?.data?.kind || entry?.offer?.kind;
+    return String(kind || "").trim().toLowerCase() === "layout";
+  };
   watch(
     () => asyncData.data.value?.offers,
     (offers) => {
-      const list = Array.isArray(offers) ? offers : [];
+      const list = isLayoutOfferActive.value
+        ? []
+        : (Array.isArray(offers) ? offers : []).filter((entry) => !isLayoutOffer(entry));
       const hero = list.find((entry) => entry?.placement === "hero") || null;
       const header = list.find((entry) => entry?.placement === "header") || null;
       const footer = list.find((entry) => entry?.placement === "footer") || null;
