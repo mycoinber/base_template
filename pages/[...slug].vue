@@ -200,6 +200,8 @@ const originalHreflangHref = computed(() => {
     : buildAbsoluteHref(siteDomain, explicitHref);
 });
 
+const useOriginalHreflangAsXDefault = computed(() => Boolean(pageHead.value?.useHreflangAsXDefault));
+
 const normalizeSiteUrl = (value) => {
   if (!value) return "";
   return String(value).trim().replace(/\/+$/, "");
@@ -470,6 +472,13 @@ const buildAlternateHref = (alterOrSlug = "") => {
   return buildAbsoluteHref(siteDomain, combined);
 };
 
+const buildOriginalDefaultHref = () => {
+  if (useOriginalHreflangAsXDefault.value && originalHreflangHref.value) {
+    return originalHreflangHref.value;
+  }
+  return buildAbsoluteHref(siteDomain, canonicalSlugValue.value);
+};
+
 const alternateLinks = computed(() => {
   const links = [];
   const primaryLang = pagePrimaryLang.value || pageLang.value;
@@ -490,7 +499,7 @@ const alternateLinks = computed(() => {
   }
 
   const defaultAlter = normalizedAlters.value.find((alter) => alter.isDefault && alter.hreflang);
-  const xDefaultHref = defaultAlter ? buildAlternateHref(defaultAlter) : defaultHref;
+  const xDefaultHref = defaultAlter ? buildAlternateHref(defaultAlter) : buildOriginalDefaultHref();
   const xDefaultKey = `x-default-${xDefaultHref}`;
   if (!seen.has(xDefaultKey)) {
     links.push({ key: "alternate-x-default", rel: "alternate", hreflang: "x-default", href: xDefaultHref });
