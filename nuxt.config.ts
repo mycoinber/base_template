@@ -43,12 +43,7 @@ export default defineNuxtConfig({
     appManifest: true,
   },
   routeRules: {
-    // Nitro's ISR storage survives a Cloudflare Pages redeploy. Reusing the
-    // production hostname could therefore serve HTML rendered with the
-    // previous offer layout even though the new layout bundle was deployed.
-    // Layout builds must always render through the current worker; standard
-    // sites keep the existing two-hour ISR window.
-    "/**": HAS_OFFER_LAYOUT ? { cache: false } : { isr: 7200 },
+    "/**": { isr: 7200 },
   },
   css: ["~/assets/css/tailwind.css", "~/assets/scss/main.scss"],
   postcss: {
