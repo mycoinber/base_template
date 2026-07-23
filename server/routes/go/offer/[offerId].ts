@@ -1,6 +1,7 @@
 import {
   createError,
   defineEventHandler,
+  getHeader,
   sendRedirect,
   setResponseHeader,
 } from "h3";
@@ -20,6 +21,18 @@ const normalizeRedirectUrl = (value: unknown) => {
   }
 };
 
+const normalizeSiteDomain = (value: unknown) => {
+  if (typeof value !== "string") return "";
+  const candidate = value.split(",")[0]?.trim().toLowerCase();
+  if (!candidate) return "";
+  try {
+    const url = new URL(candidate.includes("://") ? candidate : `http://${candidate}`);
+    return url.hostname.replace(/\.$/, "");
+  } catch {
+    return "";
+  }
+};
+
 export default defineEventHandler(async (event) => {
   setResponseHeader(event, "Cache-Control", "no-store");
   setResponseHeader(event, "X-Robots-Tag", "noindex, nofollow");
@@ -30,11 +43,17 @@ export default defineEventHandler(async (event) => {
   }
 
   const { siteId, backendBase } = resolveSiteRuntime(event);
+  const siteDomain = normalizeSiteDomain(
+    getHeader(event, "x-forwarded-host") || getHeader(event, "host"),
+  );
 
   try {
     const response = await $fetch<{ link?: string }>(
       `${backendBase}/pages/${siteId}/offers/${offerId}/link`,
-      { method: "GET" },
+      {
+        method: "GET",
+        headers: siteDomain ? { "X-Site-Domain": siteDomain } : undefined,
+      },
     );
     const link = normalizeRedirectUrl(response?.link);
     if (!link) {
