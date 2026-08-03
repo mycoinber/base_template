@@ -160,6 +160,18 @@ const activeVersionSeo = computed(() => {
   }) || null;
 });
 
+const activeSlugOnlyHreflangHref = computed(() => {
+  const activeVersion = activeVersionSeo.value;
+  if (!activeVersion || activeVersion.hreflang) return "";
+  const rawHref = typeof activeVersion.hreflangUrl === "string"
+    ? activeVersion.hreflangUrl.trim()
+    : "";
+  if (!rawHref) return "";
+  return /^https?:\/\//i.test(rawHref)
+    ? rawHref
+    : buildAbsoluteHref(siteDomain, rawHref);
+});
+
 const canonicalHref = computed(() => {
   const explicitCanonical = typeof pageHead.value?.canonicalUrl === "string"
     ? pageHead.value.canonicalUrl.trim()
@@ -169,7 +181,7 @@ const canonicalHref = computed(() => {
   const versionCanonical = typeof activeVersionSeo.value?.canonicalUrl === "string"
     ? activeVersionSeo.value.canonicalUrl.trim()
     : "";
-  return explicitCanonical || versionCanonical || buildAbsoluteHref(pageDomain.value, canonicalPathValue.value);
+  return versionCanonical || explicitCanonical || buildAbsoluteHref(pageDomain.value, canonicalPathValue.value);
 });
 
 const ampHref = computed(() => {
@@ -181,7 +193,7 @@ const ampHref = computed(() => {
   const versionAmp = typeof activeVersionSeo.value?.ampUrl === "string"
     ? activeVersionSeo.value.ampUrl.trim()
     : "";
-  const rawAmp = explicitAmp || versionAmp;
+  const rawAmp = versionAmp || explicitAmp;
   if (!rawAmp) return "";
   return /^https?:\/\//i.test(rawAmp)
     ? rawAmp
@@ -442,6 +454,10 @@ function resolveActivePageLang() {
 }
 
 const buildAlternateHref = (alterOrSlug = "") => {
+  if (!alterOrSlug && activeSlugOnlyHreflangHref.value) {
+    return activeSlugOnlyHreflangHref.value;
+  }
+
   if (!alterOrSlug && originalHreflangHref.value) {
     return originalHreflangHref.value;
   }
