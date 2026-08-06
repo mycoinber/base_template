@@ -555,9 +555,12 @@ const schemaAuthor = computed(() => {
 const schemaReviews = computed(() => {
   const blocks = Array.isArray(data.value?.article?.blocks) ? data.value.article.blocks : [];
   const reviews = [];
-  for (const block of blocks) {
-    const blockReviews = Array.isArray(block?.reviews) ? block.reviews : [];
-    for (const review of blockReviews) {
+  const reviewGroups = [
+    Array.isArray(data.value?.article?.reviews) ? data.value.article.reviews : [],
+    ...blocks.map((block) => Array.isArray(block?.reviews) ? block.reviews : []),
+  ];
+  for (const group of reviewGroups) {
+    for (const review of group) {
       const authorName = stripHtml(
         review?.authorBio || review?.name || review?.author?.name || review?.author,
       );

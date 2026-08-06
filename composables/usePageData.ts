@@ -143,6 +143,15 @@ const normalizePageResponse = (payload: AnyObject, slug: string | null) => {
       H1: article.H1 || article.h1 || payload.head?.title || "",
       intro: article.intro || introBlock?.content || "",
       introImage: heroImages,
+      // New page output persists a whole article as `contentHtml`; accept the
+      // rendering alias as well so archives created by older templates work.
+      monolithHtml: typeof article.monolithHtml === "string"
+        ? article.monolithHtml
+        : typeof article.contentHtml === "string"
+          ? article.contentHtml
+          : "",
+      reviewsTitle: typeof article.reviewsTitle === "string" ? article.reviewsTitle : "",
+      reviews: normalizeReviews(article.reviews, "article"),
       blocks: normalizedBlocks,
     },
     hero: heroImages,
