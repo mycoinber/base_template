@@ -30,13 +30,19 @@ const OFFER_LAYOUT_NAME = (process.env.OFFER_LAYOUT_NAME || "").trim();
 const OFFER_LAYOUT_OFFER_ID = (process.env.OFFER_LAYOUT_OFFER_ID || "").trim();
 const OFFER_LAYOUT_DIR = resolve(process.cwd(), ".fastgen", "offer-layout");
 const HAS_OFFER_LAYOUT = Boolean(OFFER_LAYOUT_NAME && existsSync(join(OFFER_LAYOUT_DIR, "nuxt.config.ts")));
+const FOOTER_NAME = (process.env.FOOTER_NAME || "").trim();
+const FOOTER_DIR = resolve(process.cwd(), ".fastgen", "footer");
+const HAS_FOOTER = Boolean(FOOTER_NAME && existsSync(join(FOOTER_DIR, "nuxt.config.ts")));
 
 if (OFFER_LAYOUT_NAME && !HAS_OFFER_LAYOUT) {
   throw new Error(`Offer layout '${OFFER_LAYOUT_NAME}' was configured but not prepared.`);
 }
+if (FOOTER_NAME && !HAS_FOOTER) {
+  throw new Error(`Footer '${FOOTER_NAME}' was configured but not prepared.`);
+}
 
 export default defineNuxtConfig({
-  extends: HAS_OFFER_LAYOUT ? [OFFER_LAYOUT_DIR] : [],
+  extends: [ ...(HAS_OFFER_LAYOUT ? [OFFER_LAYOUT_DIR] : []), ...(HAS_FOOTER ? [FOOTER_DIR] : []) ],
   devtools: { enabled: false },
   ssr: true,
   experimental: {
@@ -156,6 +162,7 @@ export default defineNuxtConfig({
       siteName: SITE_NAME || undefined,
       offerLayoutName: HAS_OFFER_LAYOUT ? OFFER_LAYOUT_NAME : "",
       offerLayoutOfferId: HAS_OFFER_LAYOUT ? OFFER_LAYOUT_OFFER_ID : "",
+      footerName: HAS_FOOTER ? FOOTER_NAME : "",
     },
     server: {
       siteId: SITE_ID,
