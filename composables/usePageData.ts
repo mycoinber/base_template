@@ -204,34 +204,19 @@ export function usePageData(siteId: string, slug: string | null) {
 
   const currentOfferId = useState<string | null>("currentOfferId", () => null);
   const currentOfferData = useState<any | null>("currentOfferData", () => null);
-  const currentHeaderOfferData = useState<any | null>("currentHeaderOfferData", () => null);
-  const currentFooterOfferData = useState<any | null>("currentFooterOfferData", () => null);
-  const layoutOfferId = computed(() => String(useRuntimeConfig().public.offerLayoutOfferId || "").trim());
-  const isLayoutOfferActive = computed(() =>
+  const offerLayoutActive = useState<boolean>("fastgenOfferLayoutActive", () => false);
+  const hasMountedOfferLayout = computed(() =>
     Boolean(String(useRuntimeConfig().public.offerLayoutName || "").trim()),
   );
-  const isLayoutOffer = (entry: any) => {
-    const kind = entry?.kind || entry?.data?.kind || entry?.offer?.kind;
-    return String(kind || "").trim().toLowerCase() === "layout";
-  };
   watch(
-    [() => asyncData.data.value?.offers, isLayoutOfferActive, layoutOfferId],
-    ([offers]) => {
-      const allOffers = Array.isArray(offers) ? offers : [];
-      const layoutOffer = allOffers.find((entry) => isLayoutOffer(entry)) || null;
-      const list = isLayoutOfferActive.value
-        ? []
-        : allOffers.filter((entry) => !isLayoutOffer(entry));
-      const hero = list.find((entry) => entry?.placement === "hero") || null;
-      const header = list.find((entry) => entry?.placement === "header") || null;
-      const footer = list.find((entry) => entry?.placement === "footer") || null;
-      const id = isLayoutOfferActive.value
-        ? layoutOfferId.value || layoutOffer?.offer || layoutOffer?.data?.id || null
-        : hero?.offer || hero?.data?.id || null;
-      currentOfferId.value = id || null;
-      currentOfferData.value = isLayoutOfferActive.value ? layoutOffer?.data || null : hero?.data || null;
-      currentHeaderOfferData.value = isLayoutOfferActive.value ? null : header?.data || null;
-      currentFooterOfferData.value = isLayoutOfferActive.value ? null : footer?.data || null;
+    () => asyncData.data.value?.offer,
+    (offer) => {
+      const offerId = typeof offer?.id === "string" ? offer.id.trim() : "";
+      // A referral is a single website relation. The immutable archive owns
+      // both layout branches; live Frontback data only selects one of them.
+      offerLayoutActive.value = hasMountedOfferLayout.value && Boolean(offerId);
+      currentOfferId.value = offerId || null;
+      currentOfferData.value = offer?.data || null;
     },
     { immediate: true },
   );

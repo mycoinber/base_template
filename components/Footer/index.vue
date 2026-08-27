@@ -97,9 +97,6 @@ const resolveLink = (slug) => {
             </ul>
           </nav>
 
-          <div class="max-[541px]:hidden w-[10rem] h-[3.25rem]">
-            <AdsFooterCta :offers="data?.offers" />
-          </div>
         </div>
 
         <div class="w-full text-center opacity-50 text-base max-[541px]:text-sm">

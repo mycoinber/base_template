@@ -9,23 +9,7 @@ const props = defineProps({
   },
 });
 
-const config = useRuntimeConfig();
-
-const hasOfferLayout = computed(() =>
-  Boolean(String(config.public.offerLayoutName || '').trim()),
-);
-
-const isLayoutOffer = (entry) => {
-  const kind = entry?.kind || entry?.data?.kind || entry?.offer?.kind;
-  return String(kind || '').trim().toLowerCase() === 'layout';
-};
-
-const standardOffers = computed(() => {
-  if (hasOfferLayout.value) return [];
-
-  const offers = Array.isArray(props.data?.offers) ? props.data.offers : [];
-  return offers.filter((entry) => !isLayoutOffer(entry));
-});
+const hasOfferLayout = useState<boolean>('fastgenOfferLayoutActive', () => false);
 
 const blocks = computed(() =>
   Array.isArray(props.data.article?.blocks) ? props.data.article.blocks : [],
@@ -52,22 +36,7 @@ const introBlock = computed(() =>
   ) || null,
 );
 
-const heroOffer = computed(() => {
-  return standardOffers.value.find((entry) => entry?.placement === 'hero') || null;
-});
-
-const heroOfferList = computed(() => {
-  return standardOffers.value.filter((entry) => entry?.placement === 'gallery');
-});
-
 const heroMedia = computed(() => {
-  const offerMedia = heroOffer.value?.data?.imageMedia || heroOffer.value?.data?.image;
-  if (offerMedia && typeof offerMedia === 'object' && offerMedia.path) {
-    return offerMedia;
-  }
-  if (typeof offerMedia === 'string' && offerMedia) {
-    return { path: offerMedia, alt: heroOffer.value?.data?.title || heroOffer.value?.data?.label || 'hero' };
-  }
   const intro = introBlock.value || null;
   if (intro) {
     if (Array.isArray(intro.imageUrl) && intro.imageUrl.length && intro.imageUrl[0]?.path) {
@@ -85,8 +54,6 @@ const heroMedia = computed(() => {
 });
 
 const heroAlt = computed(() => {
-  if (heroOffer.value?.data?.title) return heroOffer.value.data.title;
-  if (heroOffer.value?.data?.label) return heroOffer.value.data.label;
   if (heroMedia.value?.alt) return heroMedia.value.alt;
   if (introBlock.value?.headline) return introBlock.value.headline;
   return props.data?.article?.H1 || 'hero';
@@ -144,13 +111,7 @@ if (import.meta.server) {
   </div>
 
   <section
-    v-if="heroOffer"
-    class="relative w-full mb-8 overflow-hidden rounded-[0.625rem] border border-border"
-  >
-    <AdsHero :offer="heroOffer" />
-  </section>
-  <section
-    v-else-if="heroMedia"
+    v-if="!hasOfferLayout && heroMedia"
     class="relative w-full mb-8 overflow-hidden rounded-[0.625rem] border border-border h-[40rem] max-[541px]:min-h-[24rem]"
   >
     <img
@@ -161,8 +122,6 @@ if (import.meta.server) {
     />
     <div class="absolute inset-x-0 bottom-0 h-[60%] bg-gradient-to-b from-transparent via-black/50 to-background-01 pointer-events-none"></div>
   </section>
-
-  <AdsHeroOfferList :offers="heroOfferList" />
 
   <MainTitle v-if="data.article?.H1" :data="data" />
 

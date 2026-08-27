@@ -54,8 +54,6 @@ onUnmounted(() => {
   window.removeEventListener('scroll', updateScroll)
 })
 
-// Header CTA mirrors ads/hero logic (use offers.hero data)
-
 const resolvedLogo = computed(() => {
   const fromState = Array.isArray(sharedLogo.value) ? sharedLogo.value : []
   if (fromState.length) {
@@ -120,10 +118,6 @@ const resolveLink = (slug) => {
             </li>
           </ul>
         </nav>
-
-        <div class="max-[541px]:hidden w-[10rem] h-[3.25rem]">
-          <AdsHeaderCta :offers="data?.offers" />
-        </div>
 
         <div class="relative hidden max-[541px]:flex w-6 h-6 cursor-pointer" @click="toggleMenu">
           <span
