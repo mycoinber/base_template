@@ -1,6 +1,7 @@
 <script setup>
 import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
 import { resolveMediaPath } from '~/utils/mediaPath';
+import { withH2Anchors } from "~/utils/tableOfContents";
 
 const props = defineProps({
   data: {
@@ -16,7 +17,13 @@ const blocks = computed(() =>
 );
 
 const monolithHtml = computed(() =>
-  typeof props.data?.article?.monolithHtml === 'string' ? props.data.article.monolithHtml.trim() : '',
+  withH2Anchors(
+    typeof props.data?.article?.monolithHtml === "string"
+      ? props.data.article.monolithHtml.trim()
+      : typeof props.data?.article?.contentHtml === "string"
+        ? props.data.article.contentHtml.trim()
+        : "",
+  ),
 );
 
 const monolithReviews = computed(() =>
@@ -29,6 +36,16 @@ const monolithReviewBlock = computed(() => ({
   headline: props.data?.article?.reviewsTitle || '',
   reviews: monolithReviews.value,
 }));
+
+const renderedBlocks = computed(() => {
+  if (!monolithHtml.value) return blocks.value;
+  // A complete article is rendered as HTML. Keep renderer-owned sidecars
+  // (FAQ, product cards) but avoid rendering that same HTML as a second block.
+  return blocks.value.filter((block) => {
+    const type = String(block?.type || "").toLowerCase();
+    return type !== "html" && type !== "review";
+  });
+});
 
 const introBlock = computed(() =>
   blocks.value.find(
@@ -125,7 +142,7 @@ if (import.meta.server) {
 
   <MainTitle v-if="data.article?.H1" :data="data" />
 
-  <MainTableOfContent v-if="blocks.length && !monolithHtml" :data="data" />
+  <MainTableOfContent v-if="blocks.length || monolithHtml" :data="data" />
 
   <section v-if="monolithHtml" class="my-8 max-[541px]:my-4">
     <div class="container">
@@ -143,8 +160,7 @@ if (import.meta.server) {
   />
 
   <component
-    v-if="!monolithHtml"
-    v-for="block in blocks"
+    v-for="block in renderedBlocks"
     :key="block._id"
     :is="resolveSection(block.type)"
     :block="block"

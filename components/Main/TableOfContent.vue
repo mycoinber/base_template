@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { extractHtmlH2 } from '~/utils/tableOfContents'
 
 const props = defineProps({
   data: {
@@ -9,11 +10,26 @@ const props = defineProps({
 })
 
 const tocItems = computed(() => {
-  const blocks = Array.isArray(props.data?.article?.blocks) ? props.data.article.blocks : []
-  return blocks.filter((block) => {
+  const article = props.data?.article || {}
+  const monolithHtml = typeof article.monolithHtml === 'string'
+    ? article.monolithHtml
+    : typeof article.contentHtml === 'string'
+      ? article.contentHtml
+      : ''
+  if (monolithHtml.trim()) {
+    const items = extractHtmlH2(monolithHtml)
+    const faqTitle = String(article.faqsTitle || '').trim()
+    if (faqTitle && Array.isArray(article.faqs) && article.faqs.length) {
+      items.push({ id: 'article-faqs', title: faqTitle })
+    }
+    return items
+  }
+
+  const blocks = Array.isArray(article.blocks) ? article.blocks : []
+  return blocks.map((block, index) => {
     const title = String(block?.H2 || block?.headline || block?.title || '').trim()
-    return Boolean(title)
-  })
+    return title ? { id: String(block?._id || `section-${index + 1}`), title } : null
+  }).filter(Boolean)
 })
 </script>
 
@@ -42,16 +58,16 @@ const tocItems = computed(() => {
           >
             <li
               v-for="(item, index) in tocItems"
-              :key="item._id"
+              :key="item.id"
               class="text-color-white relative pl-8 transition-all duration-300 opacity-50 text-sm m-0 hover:text-color-01 hover:opacity-100"
               itemprop="itemListElement"
               itemscope
               itemtype="https://schema.org/ListItem"
             >
               <span class="absolute left-0 top-1/2 -translate-y-1/2">{{ index + 1 }}.</span>
-              <a :href="'#' + item._id" class="text-inherit text-sm" itemprop="url">
+              <a :href="'#' + item.id" class="text-inherit text-sm" itemprop="url">
                 <meta itemprop="position" :content="index + 1" />
-                <span itemprop="name">{{ item.H2 || item.headline || item.title }}</span>
+                <span itemprop="name">{{ item.title }}</span>
               </a>
             </li>
           </ul>
