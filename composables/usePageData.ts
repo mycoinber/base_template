@@ -205,16 +205,30 @@ export function usePageData(siteId: string, slug: string | null) {
   const currentOfferId = useState<string | null>("currentOfferId", () => null);
   const currentOfferData = useState<any | null>("currentOfferData", () => null);
   const offerLayoutActive = useState<boolean>("fastgenOfferLayoutActive", () => false);
+  const route = useRoute();
   const hasMountedOfferLayout = computed(() =>
     Boolean(String(useRuntimeConfig().public.offerLayoutName || "").trim()),
   );
+  // The editor must be able to inspect both mounted-layout branches even when
+  // this page has no live Frontback referral. Keep the old snake_case spelling
+  // as a compatibility alias for previews created before the canonical URL
+  // parameter was standardised.
+  const previewOfferMode = computed(() =>
+    String(route.query.offerPreview ?? route.query.offer_preview ?? "").trim().toLowerCase(),
+  );
   watch(
-    () => asyncData.data.value?.offer,
-    (offer) => {
+    [() => asyncData.data.value?.offer, previewOfferMode],
+    ([offer, forcedPreview]) => {
       const offerId = typeof offer?.id === "string" ? offer.id.trim() : "";
       // A referral is a single website relation. The immutable archive owns
       // both layout branches; live Frontback data only selects one of them.
-      offerLayoutActive.value = hasMountedOfferLayout.value && Boolean(offerId);
+      if (["on", "1", "true"].includes(forcedPreview)) {
+        offerLayoutActive.value = hasMountedOfferLayout.value;
+      } else if (["off", "0", "false"].includes(forcedPreview)) {
+        offerLayoutActive.value = false;
+      } else {
+        offerLayoutActive.value = hasMountedOfferLayout.value && Boolean(offerId);
+      }
       currentOfferId.value = offerId || null;
       currentOfferData.value = offer?.data || null;
     },

@@ -9,7 +9,10 @@ export default defineNuxtPlugin({ name: 'fastgen-offer-preview', enforce: 'post'
   const rawUrl = import.meta.server
     ? String(nuxtApp.ssrContext?.event?.node?.req?.url || '')
     : window.location.href;
-  const mode = new URL(rawUrl, 'http://preview.local').searchParams.get('offerPreview')?.trim().toLowerCase();
+  const previewParams = new URL(rawUrl, 'http://preview.local').searchParams;
+  // `offerPreview` is the canonical preview URL parameter. Accept the former
+  // snake_case version too so already-created sandbox links do not regress.
+  const mode = (previewParams.get('offerPreview') || previewParams.get('offer_preview'))?.trim().toLowerCase();
   const active = useState<boolean>('fastgenOfferLayoutActive', () => false);
   if (['off', '0', 'false'].includes(mode || '')) {
     active.value = false;
