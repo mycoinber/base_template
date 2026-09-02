@@ -24,6 +24,11 @@ export default defineNuxtPlugin({ name: 'fastgen-offer-preview', enforce: 'post'
 
   const forceOfferPreview = () => { active.value = true; };
   forceOfferPreview();
+  // A legacy page-data watcher can still run after this plugin and reset the
+  // branch when no live referral is attached. A forced preview owns the state.
+  watch(active, (isActive) => {
+    if (!isActive) forceOfferPreview();
+  }, { flush: 'sync' });
   nuxtApp.hook('page:finish', forceOfferPreview);
   if (import.meta.client) nuxtApp.hook('app:mounted', forceOfferPreview);
 } });
