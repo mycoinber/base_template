@@ -15,7 +15,8 @@ const sharedLogo = useState('siteLogo', () => [])
 const langPrefix = useState('siteLangPrefix', () => '')
 
 const navigationLinks = computed(() => {
-  return props.data?.pages
+  const pages = Array.isArray(props.data?.pages) ? props.data.pages : []
+  return pages
     .map((page) => {
       let title = page.title || ''
       if (title.match(/[-–:|]/)) {
