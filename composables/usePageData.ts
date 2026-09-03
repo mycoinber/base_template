@@ -220,6 +220,10 @@ export function usePageData(siteId: string, slug: string | null) {
     [() => asyncData.data.value?.offer, previewOfferMode],
     ([offer, forcedPreview]) => {
       const offerId = typeof offer?.id === "string" ? offer.id.trim() : "";
+      // The bootstrap plugin may already have resolved a live referral before
+      // this composable receives Cloudflare's occasionally-null hydration
+      // payload. Do not erase that decision with the absence of data.
+      if (!offer && asyncData.data.value == null && !forcedPreview) return;
       // A referral is a single website relation. The immutable archive owns
       // both layout branches; live Frontback data only selects one of them.
       if (["on", "1", "true"].includes(forcedPreview)) {
