@@ -249,7 +249,16 @@ export function usePageData(siteId: string, slug: string | null) {
   // editorial layout selected. Refresh only that empty hydrated value.
   if (import.meta.client) {
     onMounted(() => {
-      if (asyncData.data.value == null) void asyncData.refresh();
+      if (asyncData.data.value != null) return;
+      // Cloudflare can hydrate a server-rendered page without serialising the
+      // actual async-data value. Fetch directly rather than calling refresh(),
+      // whose pending state may be retained by that malformed payload.
+      void fetchPage().then((page) => {
+        const offerId = typeof page?.offer?.id === "string" ? page.offer.id.trim() : "";
+        offerLayoutActive.value = hasMountedOfferLayout.value && Boolean(offerId);
+        currentOfferId.value = offerId || null;
+        currentOfferData.value = page?.offer?.data || null;
+      }).catch(() => undefined);
     });
   }
 
