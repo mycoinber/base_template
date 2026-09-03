@@ -20,15 +20,33 @@ export default defineNuxtPlugin({ name: 'fastgen-offer-preview', enforce: 'post'
     nuxtApp.$config.public.offerLayoutOfferId = '';
     return;
   }
-  if (!['on', '1', 'true'].includes(mode || '')) return;
+  if (['on', '1', 'true'].includes(mode || '')) {
+    const forceOfferPreview = () => { active.value = true; };
+    forceOfferPreview();
+    // A legacy page-data watcher can still run after this plugin and reset the
+    // branch when no live referral is attached. A forced preview owns the state.
+    watch(active, (isActive) => {
+      if (!isActive) forceOfferPreview();
+    }, { flush: 'sync' });
+    nuxtApp.hook('page:finish', forceOfferPreview);
+    if (import.meta.client) nuxtApp.hook('app:mounted', forceOfferPreview);
+    return;
+  }
 
-  const forceOfferPreview = () => { active.value = true; };
-  forceOfferPreview();
-  // A legacy page-data watcher can still run after this plugin and reset the
-  // branch when no live referral is attached. A forced preview owns the state.
-  watch(active, (isActive) => {
-    if (!isActive) forceOfferPreview();
-  }, { flush: 'sync' });
-  nuxtApp.hook('page:finish', forceOfferPreview);
-  if (import.meta.client) nuxtApp.hook('app:mounted', forceOfferPreview);
+  // Cloudflare can hydrate a server-rendered page with an empty async-data
+  // entry.  Resolve the live Frontback selection independently so that this
+  // layout still follows a referral without requiring `offerPreview=on`.
+  if (!import.meta.client || !String(nuxtApp.$config.public.offerLayoutName || '').trim()) return;
+  const syncLiveReferral = async () => {
+    const segments = window.location.pathname.split('/').filter(Boolean).map(encodeURIComponent);
+    const endpoint = segments.length ? `/api/pages/${segments.join('/')}` : '/api/pages';
+    try {
+      const page = await $fetch<{ offer?: { id?: unknown } }>(endpoint, { cache: 'no-cache' });
+      active.value = Boolean(String(page?.offer?.id || '').trim());
+    } catch {
+      active.value = false;
+    }
+  };
+  void syncLiveReferral();
+  nuxtApp.hook('page:finish', () => { void syncLiveReferral(); });
 } });
