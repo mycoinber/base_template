@@ -1,7 +1,7 @@
 // composables/usePageData.ts
 import { useNuxtApp, useAsyncData } from "#app";
 import { createError } from "#imports";
-import { computed, watch } from "vue";
+import { computed, onMounted, watch } from "vue";
 
 type AnyObject = Record<string, any>;
 
@@ -242,6 +242,18 @@ export function usePageData(siteId: string, slug: string | null) {
     },
     { immediate: true },
   );
+
+  // Pages rendered by Cloudflare can hydrate with a `null` async-data payload
+  // even though SSR had fetched the page successfully. Without one client
+  // refresh, the referral watcher cannot see `page.offer` and keeps the
+  // editorial layout selected. Refresh only that empty hydrated value.
+  if (import.meta.client) {
+    onMounted(() => {
+      if (asyncData.data.value == null && asyncData.status.value !== "pending") {
+        void asyncData.refresh();
+      }
+    });
+  }
 
   if (import.meta.client) {
     watch(
