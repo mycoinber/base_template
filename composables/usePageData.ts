@@ -249,9 +249,7 @@ export function usePageData(siteId: string, slug: string | null) {
   // editorial layout selected. Refresh only that empty hydrated value.
   if (import.meta.client) {
     onMounted(() => {
-      if (asyncData.data.value == null && asyncData.status.value !== "pending") {
-        void asyncData.refresh();
-      }
+      if (asyncData.data.value == null) void asyncData.refresh();
     });
   }
 
