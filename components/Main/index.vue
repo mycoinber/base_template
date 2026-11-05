@@ -10,7 +10,7 @@ const props = defineProps({
   },
 });
 
-const hasOfferLayout = useState<boolean>('fastgenOfferLayoutActive', () => false);
+const hasOfferLayout = useState('fastgenOfferLayoutActive', () => false);
 
 const blocks = computed(() =>
   Array.isArray(props.data.article?.blocks) ? props.data.article.blocks : [],
