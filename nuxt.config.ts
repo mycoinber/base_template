@@ -49,6 +49,8 @@ export default defineNuxtConfig({
     appManifest: true,
   },
   routeRules: {
+    "/robots.txt": { isr: false, cache: false },
+    "/sitemap.xml": { isr: false, cache: false },
     "/**": { isr: 7200 },
   },
   css: ["~/assets/css/tailwind.css", "~/assets/scss/main.scss"],
@@ -66,8 +68,6 @@ export default defineNuxtConfig({
     "@nuxtjs/tailwindcss",
     "nuxt-schema-org",
     "nuxt-og-image",
-    "@nuxtjs/robots",
-    "@nuxtjs/sitemap",
     "nuxt-vitalizer",
   ],
   schemaOrg: {
